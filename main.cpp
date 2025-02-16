@@ -7,6 +7,9 @@ namespace sen
     template <int numberOfRows, int numberOfCols>
     struct Mat
     {
+        static_assert(0 <= numberOfRows, "");
+        static_assert(0 <= numberOfCols, "");
+
         int rows() const { return numberOfRows; }
         int cols() const { return numberOfCols; }
 
@@ -37,9 +40,116 @@ namespace sen
     };
 
     template <int rows, int cols>
+    void allocate_if_needed(Mat<rows, cols>* m, int numberOfRows, int numberOfCols)
+    {
+    }
+
+    // Dynamic Specialization, only for cpu
+    // Do not support any binary operation of (Dynamic, Static)
+    // Please use (Dynamic, Dynamic) or (Static, Static)
+
+#define SEN_DYNAMIC -1, -1
+
+    template <>
+    struct Mat<SEN_DYNAMIC>
+    {
+        Mat()
+        {
+        }
+        ~Mat()
+        {
+            delete[] m_storage;
+            m_storage = 0;
+        }
+        void operator=(const Mat& rhs)
+        {
+            allocate(rhs.rows(), rhs.cols());
+
+            for (int i = 0; i < rhs.rows() * rhs.cols(); i++)
+            {
+                m_storage[i] = rhs.m_storage[i];
+            }
+        }
+        Mat(const Mat& rhs)
+        {
+            allocate(rhs.rows(), rhs.cols());
+
+            for (int i = 0; i < rhs.rows() * rhs.cols(); i++)
+            {
+                m_storage[i] = rhs.m_storage[i];
+            }
+        }
+
+        // static to dynamic
+        template <int M, int N>
+        Mat(const Mat<M, N>& rhs)
+        {
+            allocate(rhs.rows(), rhs.cols());
+
+            for (int i_row = 0; i_row < rhs.rows(); i_row++)
+            for (int i_col = 0; i_col < rhs.cols(); i_col++)
+            {
+                (*this)(i_row, i_col) = rhs(i_row, i_col);
+            }
+        }
+
+        void allocate(int numberOfRows, int numberOfCols)
+        {
+            m_numberOfRows = numberOfRows;
+            m_numberOfCols = numberOfCols;
+            delete[] m_storage;
+            m_storage = new float[numberOfRows * numberOfCols];
+        }
+
+        // dynamic to static
+        template <int M, int N>
+        Mat<M, N> asMatMxN()
+        {
+            assert(rows() == M && "dim mismatch");
+            assert(cols() == N && "dim mismatch");
+
+            Mat<M, N> r;
+            for (int i_row = 0; i_row < rows(); i_row++)
+            for (int i_col = 0; i_col < cols(); i_col++)
+            {
+                r(i_row, i_col) = (*this)(i_row, i_col);
+            }
+            return r;
+        }
+
+        int rows() const { return m_numberOfRows; }
+        int cols() const { return m_numberOfCols; }
+
+        float& operator()(int i_col, int i_row)
+        {
+            return m_storage[i_col * m_numberOfRows + i_row];
+        }
+        const float& operator()(int i_col, int i_row) const
+        {
+            return m_storage[i_col * m_numberOfRows + i_row];
+        }
+
+        float* begin() { return m_storage; }
+        float* end() { return m_storage + m_numberOfCols * m_numberOfRows; }
+        const float* begin() const { return m_storage; }
+        const float* end() const { return m_storage + m_numberOfCols * m_numberOfRows; }
+
+        int m_numberOfRows = 0;
+        int m_numberOfCols = 0;
+        float* m_storage = 0;
+    };
+
+    template <>
+    void allocate_if_needed<SEN_DYNAMIC>(Mat<SEN_DYNAMIC> *m, int numberOfRows, int numberOfCols)
+    {
+        m->allocate(numberOfRows, numberOfCols);
+    }
+    
+
+    template <int rows, int cols>
     void print(const Mat<rows, cols>& m)
     {
-        printf("{\n");
+        printf("Mat<%d,%d> %dx%d {\n", rows, cols, m.rows(), m.cols());
         for (int i_row = 0; i_row < m.rows(); i_row++)
         {
             printf("  row[%d]=", i_row);
@@ -57,6 +167,8 @@ namespace sen
     {
         Mat<lhs_rows, rhs_cols> r;
         static_assert(lhs_cols == rhs_rows, "invalid multiplication");
+
+        allocate_if_needed(&r, lhs.rows(), rhs.cols());
         
         for (int dst_row = 0; dst_row < r.rows(); dst_row++)
         for (int dst_col = 0; dst_col < r.cols(); dst_col++)
@@ -79,12 +191,31 @@ namespace sen
         static_assert(lhs_cols == rhs_cols, "invalid substruct");
         Mat<lhs_rows, lhs_cols> r;
 
+        allocate_if_needed(&r, lhs.rows(), lhs.cols());
+
         for (int dst_row = 0; dst_row < r.rows(); dst_row++)
         for (int dst_col = 0; dst_col < r.cols(); dst_col++)
         {
             r(dst_col, dst_row) = lhs(dst_col, dst_row) - rhs(dst_col, dst_row);
         }
 
+        return r;
+    }
+
+    template <int rows, int cols>
+    Mat<cols, rows> transpose(const Mat<rows, cols>& m)
+    {
+        Mat<cols, rows> r;
+
+        allocate_if_needed(&r, m.cols(), m.rows());
+
+        for (int i_row = 0; i_row < m.rows(); i_row++)
+        {
+            for (int i_col = 0; i_col < m.cols(); i_col++)
+            {
+                r(i_row, i_col ) = m(i_col, i_row);
+            }
+        }
         return r;
     }
 }
@@ -103,6 +234,7 @@ glm::mat<rows, cols, float> toGLM(const sen::Mat<rows, cols>& m)
     }
     return r;
 }
+
 template <int rows, int cols>
 sen::Mat<rows, cols> fromGLM(const glm::mat<rows, cols, float>& m)
 {
@@ -181,6 +313,52 @@ int main() {
             glm::mat3x3 AxB_ref = toGLM(A) * toGLM(B);
             for (float v : AxB - fromGLM(AxB_ref)) {
                 PR_ASSERT(fabs(v) < 1.0e-8f)
+            }
+        }
+    }
+    {
+        PCG rng;
+        for (int i = 0; i < 100; i++)
+        {
+            sen::Mat<3, 2> A;
+            for (float& v : A) { v = rng.uniformf(); }
+            // sen::print(A);
+            // sen::print(sen::transpose(A));
+
+            // M = (M^T)^T
+            for (float v : A - sen::transpose(sen::transpose(A))) {
+                PR_ASSERT(v == 0.0f);
+            }
+
+            // M == M^T for symmetric
+            sen::Mat<3, 3> sym = A * sen::transpose(A);
+            for (float v : sym - sen::transpose(sym)) {
+                PR_ASSERT(v == 0.0f);
+            }
+        }
+    }
+
+    // [Mul] Dynamic
+    {
+        PCG rng;
+        for (int i = 0; i < 100; i++)
+        {
+            sen::Mat<SEN_DYNAMIC> A;
+            sen::Mat<SEN_DYNAMIC> B;
+
+            A.allocate(3, 3);
+            B.allocate(3, 3);
+
+            for (float& v : A) { v = rng.uniformf(); }
+            for (float& v : B) { v = rng.uniformf(); }
+            //sen::print(A);
+            //sen::print(B);
+
+            sen::Mat<SEN_DYNAMIC> AxB = A * B;
+            //sen::print(AxB);
+            glm::mat3x3 AxB_ref = toGLM(A.asMatMxN<3, 3>()) * toGLM(B.asMatMxN<3, 3>());
+            for (float v : AxB - sen::Mat<SEN_DYNAMIC>(fromGLM(AxB_ref))) {
+                PR_ASSERT(fabs(v) < 1.0e-8f);
             }
         }
     }
