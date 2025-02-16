@@ -71,6 +71,22 @@ namespace sen
 
         return r;
     }
+
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    Mat<lhs_rows, rhs_cols> operator-(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    {
+        static_assert(lhs_rows == rhs_rows, "invalid substruct");
+        static_assert(lhs_cols == rhs_cols, "invalid substruct");
+        Mat<lhs_rows, lhs_cols> r;
+
+        for (int dst_row = 0; dst_row < r.rows(); dst_row++)
+        for (int dst_col = 0; dst_col < r.cols(); dst_col++)
+        {
+            r(dst_col, dst_row) = lhs(dst_col, dst_row) - rhs(dst_col, dst_row);
+        }
+
+        return r;
+    }
 }
 
 // for tests
@@ -78,16 +94,28 @@ template <int rows, int cols>
 glm::mat<rows, cols, float> toGLM(const sen::Mat<rows, cols>& m)
 {
     glm::mat<rows, cols, float> r;
-    for (int i_row = 0; i_row < m.rows(); i_row++)
+    for (int i_row = 0; i_row < rows; i_row++)
     {
-        for (int i_col = 0; i_col < m.cols(); i_col++)
+        for (int i_col = 0; i_col < cols; i_col++)
         {
             r[i_col][i_row] = m(i_col, i_row);
         }
     }
     return r;
 }
-
+template <int rows, int cols>
+sen::Mat<rows, cols> fromGLM(const glm::mat<rows, cols, float>& m)
+{
+    sen::Mat<rows, cols> r;
+    for (int i_row = 0; i_row < rows; i_row++)
+    {
+        for (int i_col = 0; i_col < cols; i_col++)
+        {
+            r(i_col, i_row) = m[i_col][i_row];
+        }
+    }
+    return r;
+}
 
 template <class T>
 inline T ss_max(T x, T y)
@@ -135,28 +163,27 @@ void eigen_vectors_of_cov(glm::vec2* eigen0, glm::vec2* eigen1, const glm::mat2&
 int main() {
     using namespace pr;
 
-    PCG rng;
-    for (int i = 0; i < 100; i++)
     {
-        sen::Mat<3, 3> lhs;
-        sen::Mat<3, 3> rhs;
+        PCG rng;
+        for (int i = 0; i < 100; i++)
+        {
+            sen::Mat<3, 3> A;
+            sen::Mat<3, 3> B;
 
-        for (float& v : lhs) { v = rng.uniformf(); }
-        for (float& v : rhs) { v = rng.uniformf(); }
-        sen::print(lhs);
-        sen::print(rhs);
+            for (float& v : A) { v = rng.uniformf(); }
+            for (float& v : B) { v = rng.uniformf(); }
+            //sen::print(A);
+            //sen::print(B);
 
-        sen::Mat<3, 3> result = lhs * rhs;
-        glm::mat3x3 ref = toGLM(lhs) * toGLM(rhs);
+            sen::Mat<3, 3> AxB = A * B;
+            //sen::print(AxB);
 
-        sen::print(result);
-
-        printf("");
-        //mul(lhs, m);
-        //print(m);
-        //sen::Mat<3, 1> c = m.col(0);
+            glm::mat3x3 AxB_ref = toGLM(A) * toGLM(B);
+            for (float v : AxB - fromGLM(AxB_ref)) {
+                PR_ASSERT(fabs(v) < 1.0e-8f)
+            }
+        }
     }
-
 
     Config config;
     config.ScreenWidth = 1920;
