@@ -2,6 +2,9 @@
 #include <iostream>
 #include <memory>
 
+#include <intrin.h>
+#define SEN_ASSERT(ExpectTrue) if((ExpectTrue) == 0) { __debugbreak(); }
+
 namespace sen
 {
     template <int numberOfRows, int numberOfCols>
@@ -48,10 +51,8 @@ namespace sen
     // Do not support any binary operation of (Dynamic, Static)
     // Please use (Dynamic, Dynamic) or (Static, Static)
 
-#define SEN_DYNAMIC -1, -1
-
     template <>
-    struct Mat<SEN_DYNAMIC>
+    struct Mat<-1, -1>
     {
         Mat()
         {
@@ -105,8 +106,8 @@ namespace sen
         template <int M, int N>
         Mat<M, N> asMatMxN()
         {
-            assert(rows() == M && "dim mismatch");
-            assert(cols() == N && "dim mismatch");
+            SEN_ASSERT(rows() == M && "dim mismatch");
+            SEN_ASSERT(cols() == N && "dim mismatch");
 
             Mat<M, N> r;
             for (int i_row = 0; i_row < rows(); i_row++)
@@ -139,8 +140,10 @@ namespace sen
         float* m_storage = 0;
     };
 
+    using MatDyn = Mat<-1, -1>;
+
     template <>
-    void allocate_if_needed<SEN_DYNAMIC>(Mat<SEN_DYNAMIC> *m, int numberOfRows, int numberOfCols)
+    void allocate_if_needed<-1, -1>(MatDyn *m, int numberOfRows, int numberOfCols)
     {
         m->allocate(numberOfRows, numberOfCols);
     }
@@ -167,6 +170,7 @@ namespace sen
     {
         Mat<lhs_rows, rhs_cols> r;
         static_assert(lhs_cols == rhs_rows, "invalid multiplication");
+        SEN_ASSERT(lhs.cols() == rhs.rows() && "invalid multiplication");
 
         allocate_if_needed(&r, lhs.rows(), rhs.cols());
         
@@ -343,8 +347,8 @@ int main() {
         PCG rng;
         for (int i = 0; i < 100; i++)
         {
-            sen::Mat<SEN_DYNAMIC> A;
-            sen::Mat<SEN_DYNAMIC> B;
+            sen::MatDyn A;
+            sen::MatDyn B;
 
             A.allocate(3, 3);
             B.allocate(3, 3);
@@ -354,10 +358,10 @@ int main() {
             //sen::print(A);
             //sen::print(B);
 
-            sen::Mat<SEN_DYNAMIC> AxB = A * B;
+            sen::MatDyn AxB = A * B;
             //sen::print(AxB);
             glm::mat3x3 AxB_ref = toGLM(A.asMatMxN<3, 3>()) * toGLM(B.asMatMxN<3, 3>());
-            for (float v : AxB - sen::Mat<SEN_DYNAMIC>(fromGLM(AxB_ref))) {
+            for (float v : AxB - sen::MatDyn(fromGLM(AxB_ref))) {
                 PR_ASSERT(fabs(v) < 1.0e-8f);
             }
         }
