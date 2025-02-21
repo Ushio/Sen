@@ -7,6 +7,11 @@
 
 namespace sen
 {
+    // Example of Mat<3, 2>
+    // o, o
+    // o, o
+    // o, o
+
     template <int numberOfRows, int numberOfCols>
     struct Mat
     {
@@ -26,6 +31,8 @@ namespace sen
         }
 
         Mat<numberOfRows, 1> col(int i_col) const {
+            SEN_ASSERT(0 <= i_col && i_col < numberOfCols && "");
+
             Mat<numberOfRows, 1> col;
             for (int i = 0; i < numberOfRows; i++)
             {
@@ -41,6 +48,39 @@ namespace sen
 
         float m_storage[numberOfCols][numberOfRows];
     };
+
+    template <int numberOfRows, int numberOfCols>
+    struct RowMajorInitializer {
+        float xs[numberOfRows * numberOfCols];
+        int index;
+        RowMajorInitializer() :index(0)
+        {
+        }
+        RowMajorInitializer& operator()(float value) {
+            SEN_ASSERT(index < numberOfRows * numberOfCols && "out of bounds");
+            xs[index++] = value;
+            return *this;
+        }
+        operator Mat<numberOfRows, numberOfCols>() {
+            SEN_ASSERT(index == numberOfRows * numberOfCols && "initialize failure");
+
+            Mat<numberOfRows, numberOfCols> m;
+            for (int i_col = 0; i_col < m.cols(); i_col++)
+            for (int i_row = 0; i_row < m.rows(); i_row++)
+            {
+                m(i_col, i_row) = xs[i_row * numberOfCols + i_col];
+            }
+            return m;
+        }
+    };
+    template <int numberOfRows, int numberOfCols>
+    RowMajorInitializer<numberOfRows, numberOfCols> mat_of( float v )
+    {
+        static_assert(0 <= numberOfRows, "");
+        static_assert(0 <= numberOfCols, "");
+        RowMajorInitializer<numberOfRows, numberOfCols> initializer;
+        return initializer(v);
+    }
 
     template <int rows, int cols>
     void allocate_if_needed(Mat<rows, cols>* m, int numberOfRows, int numberOfCols)
@@ -87,10 +127,10 @@ namespace sen
         {
             allocate(rhs.rows(), rhs.cols());
 
-            for (int i_row = 0; i_row < rhs.rows(); i_row++)
             for (int i_col = 0; i_col < rhs.cols(); i_col++)
+            for (int i_row = 0; i_row < rhs.rows(); i_row++)
             {
-                (*this)(i_row, i_col) = rhs(i_row, i_col);
+                (*this)(i_col, i_row) = rhs(i_col, i_row);
             }
         }
 
@@ -110,10 +150,10 @@ namespace sen
             SEN_ASSERT(cols() == N && "dim mismatch");
 
             Mat<M, N> r;
-            for (int i_row = 0; i_row < rows(); i_row++)
             for (int i_col = 0; i_col < cols(); i_col++)
+            for (int i_row = 0; i_row < rows(); i_row++)
             {
-                r(i_row, i_col) = (*this)(i_row, i_col);
+                r(i_col, i_row) = (*this)(i_col, i_row);
             }
             return r;
         }
@@ -299,6 +339,17 @@ void eigen_vectors_of_cov(glm::vec2* eigen0, glm::vec2* eigen1, const glm::mat2&
 int main() {
     using namespace pr;
 
+    {
+        sen::Mat<2, 3> A = sen::mat_of<2, 3>
+            (1  )(2  )(3  )
+            (11 )(22 )(33 );
+        sen::print(A);
+        sen::print(sen::MatDyn(A));
+        sen::print(A.col(1));
+
+        float v = A(0, 1);
+        printf("");
+    }
     {
         PCG rng;
         for (int i = 0; i < 100; i++)
