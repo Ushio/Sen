@@ -31,14 +31,25 @@ namespace sen
         }
 
         Mat<numberOfRows, 1> col(int i_col) const {
-            SEN_ASSERT(0 <= i_col && i_col < numberOfCols && "");
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "");
 
-            Mat<numberOfRows, 1> col;
+            Mat<numberOfRows, 1> c;
             for (int i = 0; i < rows(); i++)
             {
-                col(0, i) = (*this)(i_col, i);
+                c(0, i) = (*this)(i_col, i);
             }
-            return col;
+            return c;
+        }
+
+        Mat<1, numberOfCols> row(int i_row) const {
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "");
+
+            Mat<1, numberOfCols> r;
+            for (int i = 0; i < cols(); i++)
+            {
+                r(i, 0) = (*this)(i, i_row);
+            }
+            return r;
         }
 
         float* begin() { return &m_storage[0][0]; }
@@ -171,15 +182,27 @@ namespace sen
         }
 
         Mat<-1, -1> col(int i_col) const {
-            SEN_ASSERT(0 <= i_col && i_col < m_numberOfCols && "");
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "");
 
-            Mat<-1, -1> col;
-            col.allocate(rows(), 1);
+            Mat<-1, -1> c;
+            c.allocate(rows(), 1);
             for (int i = 0; i < rows(); i++)
             {
-                col(0, i) = (*this)(i_col, i);
+                c(0, i) = (*this)(i_col, i);
             }
-            return col;
+            return c;
+        }
+
+        Mat<-1, -1> row(int i_row) const {
+            SEN_ASSERT(0 <= i_row && i_row < m_numberOfRows && "");
+
+            Mat<-1, -1> r;
+            r.allocate(1, cols());
+            for (int i = 0; i < cols(); i++)
+            {
+                r(i, 0) = (*this)(i, i_row);
+            }
+            return r;
         }
 
         float* begin() { return m_storage; }
@@ -360,6 +383,8 @@ int main() {
         sen::print(A.col(2));
         sen::print(sen::MatDyn(A).col(2));
 
+        sen::print(A.row(1));
+        sen::print(sen::MatDyn(A).row(1));
         float v = A(0, 1);
         printf("");
     }
