@@ -34,7 +34,7 @@ namespace sen
             SEN_ASSERT(0 <= i_col && i_col < numberOfCols && "");
 
             Mat<numberOfRows, 1> col;
-            for (int i = 0; i < numberOfRows; i++)
+            for (int i = 0; i < rows(); i++)
             {
                 col(0, i) = (*this)(i_col, i);
             }
@@ -168,6 +168,18 @@ namespace sen
         const float& operator()(int i_col, int i_row) const
         {
             return m_storage[i_col * m_numberOfRows + i_row];
+        }
+
+        Mat<-1, -1> col(int i_col) const {
+            SEN_ASSERT(0 <= i_col && i_col < m_numberOfCols && "");
+
+            Mat<-1, -1> col;
+            col.allocate(rows(), 1);
+            for (int i = 0; i < rows(); i++)
+            {
+                col(0, i) = (*this)(i_col, i);
+            }
+            return col;
         }
 
         float* begin() { return m_storage; }
@@ -345,7 +357,8 @@ int main() {
             (11 )(22 )(33 );
         sen::print(A);
         sen::print(sen::MatDyn(A));
-        sen::print(A.col(1));
+        sen::print(A.col(2));
+        sen::print(sen::MatDyn(A).col(2));
 
         float v = A(0, 1);
         printf("");
