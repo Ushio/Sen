@@ -4,6 +4,7 @@
 
 #include <intrin.h>
 #define SEN_ASSERT(ExpectTrue) if((ExpectTrue) == 0) { __debugbreak(); }
+//#define SEN_ASSERT(ExpectTrue) 
 
 namespace sen
 {
@@ -23,15 +24,20 @@ namespace sen
 
         float& operator()(int i_col, int i_row) 
         {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
             return m_storage[i_col][i_row];
         }
         const float& operator()(int i_col, int i_row) const
         {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
             return m_storage[i_col][i_row];
         }
 
-        Mat<numberOfRows, 1> col(int i_col) const {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "");
+        Mat<numberOfRows, 1> col(int i_col) const 
+        {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
 
             Mat<numberOfRows, 1> c;
             for (int i = 0; i < rows(); i++)
@@ -39,6 +45,14 @@ namespace sen
                 c(0, i) = (*this)(i_col, i);
             }
             return c;
+        }
+        void set_col(int i_col, const Mat<numberOfRows, 1>& c)
+        {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "");
+            for (int i = 0; i < rows(); i++)
+            {
+                (*this)(i_col, i) = c(0, i);
+            }
         }
 
         Mat<1, numberOfCols> row(int i_row) const {
@@ -84,6 +98,7 @@ namespace sen
             return m;
         }
     };
+
     template <int numberOfRows, int numberOfCols>
     RowMajorInitializer<numberOfRows, numberOfCols> mat_of( float v )
     {
@@ -174,15 +189,19 @@ namespace sen
 
         float& operator()(int i_col, int i_row)
         {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
             return m_storage[i_col * m_numberOfRows + i_row];
         }
         const float& operator()(int i_col, int i_row) const
         {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
             return m_storage[i_col * m_numberOfRows + i_row];
         }
 
         Mat<-1, -1> col(int i_col) const {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "");
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
 
             Mat<-1, -1> c;
             c.allocate(rows(), 1);
@@ -194,7 +213,7 @@ namespace sen
         }
 
         Mat<-1, -1> row(int i_row) const {
-            SEN_ASSERT(0 <= i_row && i_row < m_numberOfRows && "");
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
 
             Mat<-1, -1> r;
             r.allocate(1, cols());
@@ -385,7 +404,13 @@ int main() {
 
         sen::print(A.row(1));
         sen::print(sen::MatDyn(A).row(1));
-        float v = A(0, 1);
+
+        A.set_col(1, sen::mat_of<2, 1>
+            (0)
+            (0)
+        );
+        sen::print(A);
+
         printf("");
     }
     {
