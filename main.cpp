@@ -13,16 +13,34 @@ namespace sen
     // o, o
     // o, o
 
+    //template <int numberOfRows, int numberOfCols>
+    //struct RowMajorInitializer;
+
     template <int numberOfRows, int numberOfCols>
     struct Mat
     {
+        Mat() {}
+
+        template <int M, int N>
+        Mat(const Mat<M, N>& rhs /* static or dynamic */)
+        {
+            SEN_ASSERT(rows() == rhs.rows() && "dim mismatch");
+            SEN_ASSERT(cols() == rhs.cols() && "dim mismatch");
+
+            for (int i_col = 0; i_col < rhs.cols(); i_col++)
+            for (int i_row = 0; i_row < rhs.rows(); i_row++)
+            {
+                (*this)(i_col, i_row) = rhs(i_col, i_row);
+            }
+        }
+
         static_assert(0 <= numberOfRows, "");
         static_assert(0 <= numberOfCols, "");
 
         int rows() const { return numberOfRows; }
         int cols() const { return numberOfCols; }
 
-        float& operator()(int i_col, int i_row) 
+        float& operator()(int i_col, int i_row)
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
             SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
@@ -35,7 +53,7 @@ namespace sen
             return m_storage[i_col][i_row];
         }
 
-        Mat<numberOfRows, 1> col(int i_col) const 
+        Mat<numberOfRows, 1> col(int i_col) const
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
 
@@ -46,13 +64,20 @@ namespace sen
             }
             return c;
         }
-        void set_col(int i_col, const Mat<numberOfRows, 1>& c)
+
+        template<int M, int N>
+        void set_col(int i_col, const Mat<M, N>& c /* static or dynamic */)
         {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "");
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
+            SEN_ASSERT(rows() == c.rows());
             for (int i = 0; i < rows(); i++)
             {
                 (*this)(i_col, i) = c(0, i);
             }
+        }
+        void set_col(int i_col, const Mat<numberOfRows, 1>& c)
+        {
+            set_col<numberOfRows, 1>(i_col, c);
         }
 
         Mat<1, numberOfCols> row(int i_row) const {
@@ -86,7 +111,7 @@ namespace sen
             xs[index++] = value;
             return *this;
         }
-        operator Mat<numberOfRows, numberOfCols>() {
+        operator Mat<numberOfRows, numberOfCols>() const {
             SEN_ASSERT(index == numberOfRows * numberOfCols && "initialize failure");
 
             Mat<numberOfRows, numberOfCols> m;
@@ -128,15 +153,6 @@ namespace sen
             delete[] m_storage;
             m_storage = 0;
         }
-        void operator=(const Mat& rhs)
-        {
-            allocate(rhs.rows(), rhs.cols());
-
-            for (int i = 0; i < rhs.rows() * rhs.cols(); i++)
-            {
-                m_storage[i] = rhs.m_storage[i];
-            }
-        }
         Mat(const Mat& rhs)
         {
             allocate(rhs.rows(), rhs.cols());
@@ -147,10 +163,37 @@ namespace sen
             }
         }
 
-        // static to dynamic
+        template <int M, int N>
+        void operator=(const Mat<M, N>& rhs)
+        {
+            allocate(rhs.rows(), rhs.cols());
+
+            for (int i_col = 0; i_col < rhs.cols(); i_col++)
+            for (int i_row = 0; i_row < rhs.rows(); i_row++)
+            {
+                (*this)(i_col, i_row) = rhs(i_col, i_row);
+            }
+        }
+        void operator=(const Mat& rhs)
+        {
+            this->operator=<-1,-1>(rhs);
+        }
+
         template <int M, int N>
         Mat(const Mat<M, N>& rhs)
         {
+            allocate(rhs.rows(), rhs.cols());
+
+            for (int i_col = 0; i_col < rhs.cols(); i_col++)
+            for (int i_row = 0; i_row < rhs.rows(); i_row++)
+            {
+                (*this)(i_col, i_row) = rhs(i_col, i_row);
+            }
+        }
+        template <int M, int N>
+        Mat(const RowMajorInitializer<M, N>& rhs_init)
+        {
+            Mat<M, N> rhs = rhs_init;
             allocate(rhs.rows(), rhs.cols());
 
             for (int i_col = 0; i_col < rhs.cols(); i_col++)
@@ -166,22 +209,6 @@ namespace sen
             m_numberOfCols = numberOfCols;
             delete[] m_storage;
             m_storage = new float[numberOfRows * numberOfCols];
-        }
-
-        // dynamic to static
-        template <int M, int N>
-        Mat<M, N> asMatMxN()
-        {
-            SEN_ASSERT(rows() == M && "dim mismatch");
-            SEN_ASSERT(cols() == N && "dim mismatch");
-
-            Mat<M, N> r;
-            for (int i_col = 0; i_col < cols(); i_col++)
-            for (int i_row = 0; i_row < rows(); i_row++)
-            {
-                r(i_col, i_row) = (*this)(i_col, i_row);
-            }
-            return r;
         }
 
         int rows() const { return m_numberOfRows; }
@@ -210,6 +237,17 @@ namespace sen
                 c(0, i) = (*this)(i_col, i);
             }
             return c;
+        }
+
+        template<int M, int N>
+        void set_col(int i_col, const Mat<M, N>& c)
+        {
+            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
+            SEN_ASSERT(rows() == c.rows());
+            for (int i = 0; i < rows(); i++)
+            {
+                (*this)(i_col, i) = c(0, i);
+            }
         }
 
         Mat<-1, -1> row(int i_row) const {
@@ -395,6 +433,21 @@ int main() {
 
     {
         sen::Mat<2, 3> A = sen::mat_of<2, 3>
+            (1)(2)(3)
+            (11)(22)(33);
+
+        sen::MatDyn B;
+        sen::Mat<2, 3> C;
+
+        B = A;
+        C = B;
+
+        for (float v : A - C) {
+            PR_ASSERT(v == 0.0f);
+        }
+    }
+    {
+        sen::Mat<2, 3> A = sen::mat_of<2, 3>
             (1  )(2  )(3  )
             (11 )(22 )(33 );
         sen::print(A);
@@ -405,10 +458,15 @@ int main() {
         sen::print(A.row(1));
         sen::print(sen::MatDyn(A).row(1));
 
-        A.set_col(1, sen::mat_of<2, 1>
+
+        sen::Mat<2, 3> B = sen::MatDyn(A);
+        sen::print(B);
+        sen::MatDyn(sen::mat_of<2, 1>
             (0)
             (0)
         );
+        sen::MatDyn DA(A);
+        A.set_col(1, sen::mat_of<2, 1>(0)(0));
         sen::print(A);
 
         printf("");
@@ -474,7 +532,7 @@ int main() {
 
             sen::MatDyn AxB = A * B;
             //sen::print(AxB);
-            glm::mat3x3 AxB_ref = toGLM(A.asMatMxN<3, 3>()) * toGLM(B.asMatMxN<3, 3>());
+            glm::mat3x3 AxB_ref = toGLM(sen::Mat<3,3>(A)) * toGLM(sen::Mat<3, 3>(B));
             for (float v : AxB - sen::MatDyn(fromGLM(AxB_ref))) {
                 PR_ASSERT(fabs(v) < 1.0e-8f);
             }
