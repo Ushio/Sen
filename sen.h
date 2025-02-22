@@ -84,7 +84,7 @@ namespace sen
         float* m_storage = 0;
     };
 
-    // Example of Mat<3, 2>
+    // Example of Mat<3 /*out*/, 2 /*in*/>
     // | m(0,0), m(0,1) |
     // | m(1,0), m(1,1) |
     // | m(2,0), m(2,1) |
@@ -252,11 +252,17 @@ namespace sen
         printf("}\n");
     }
 
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    Mat<lhs_rows, rhs_cols> operator*(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    template <int rows, int cols>
+    struct ConservativelyDynamic
     {
-        Mat<lhs_rows, rhs_cols> r;
-        static_assert(lhs_cols == rhs_rows, "invalid multiplication");
+        using type = typename cond<rows == -1 || cols == -1, Mat<-1, -1>, Mat<rows, cols>>::type;
+    };
+
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator*(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    {
+        typename ConservativelyDynamic<lhs_rows, rhs_cols>::type r;
+        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_rows, "invalid multiplication");
         SEN_ASSERT(lhs.cols() == rhs.rows() && "invalid multiplication");
 
         r.allocate(lhs.rows(), rhs.cols());

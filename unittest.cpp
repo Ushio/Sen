@@ -108,6 +108,27 @@ TEST_CASE("Mul Dynamic") {
             REQUIRE(fabs(v) < 1.0e-8f);
         }
     }
+
+    for (int i = 0; i < 100; i++)
+    {
+        sen::MatDyn A;
+        sen::Mat<4, 3> B;
+
+        A.allocate(3, 4);
+        B.allocate(4, 3);
+
+        for (float& v : A) { v = rng.uniformf(); }
+        for (float& v : B) { v = rng.uniformf(); }
+        //sen::print(A);
+        //sen::print(B);
+
+        sen::MatDyn AxB = A * B;
+        //sen::print(AxB);
+        glm::mat3x3 AxB_ref = toGLM(sen::Mat<3, 4>(A)) * toGLM(sen::Mat<4, 3>(B));
+        for (float v : AxB - sen::MatDyn(fromGLM(AxB_ref))) {
+            REQUIRE(fabs(v) < 1.0e-8f);
+        }
+    }
 }
 
 TEST_CASE("Transpose") {
@@ -126,6 +147,26 @@ TEST_CASE("Transpose") {
 
         // M == M^T for symmetric
         sen::Mat<3, 3> sym = A * sen::transpose(A);
+        for (float v : sym - sen::transpose(sym)) {
+            REQUIRE(v == 0.0f);
+        }
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        sen::MatDyn A;
+        A.allocate(1 + rng.uniform() % 100, 1 + rng.uniform() % 100);
+        for (float& v : A) { v = rng.uniformf(); }
+        // sen::print(A);
+        // sen::print(sen::transpose(A));
+
+        // M = (M^T)^T
+        for (float v : A - sen::transpose(sen::transpose(A))) {
+            REQUIRE(v == 0.0f);
+        }
+
+        // M == M^T for symmetric
+        sen::MatDyn sym = A * sen::transpose(A);
         for (float v : sym - sen::transpose(sym)) {
             REQUIRE(v == 0.0f);
         }
