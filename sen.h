@@ -12,10 +12,6 @@ namespace sen
     template<class T, class F>
     struct cond<false, T, F> { using type = F; };
 
-    // Example of Mat<3, 2>
-    // o, o
-    // o, o
-    // o, o
 
     template <int numberOfRows, int numberOfCols>
     struct Storage
@@ -88,6 +84,10 @@ namespace sen
         float* m_storage = 0;
     };
 
+    // Example of Mat<3, 2>
+    // | m(0,0), m(0,1) |
+    // | m(1,0), m(1,1) |
+    // | m(2,0), m(2,1) |
     template <int numberOfRows, int numberOfCols>
     struct Mat
     {
@@ -116,13 +116,13 @@ namespace sen
         int cols() const { return m_storage.cols(); }
         int size() const { return m_storage.size(); }
 
-        float& operator()(int i_col, int i_row)
+        float& operator()(int i_row, int i_col)
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
             SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
             return m_storage[i_col * m_storage.rows() + i_row];
         }
-        const float& operator()(int i_col, int i_row) const
+        const float& operator()(int i_row, int i_col) const
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
             SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
@@ -148,7 +148,7 @@ namespace sen
             c.allocate(rows(), 1);
             for (int i = 0; i < rows(); i++)
             {
-                c(0, i) = (*this)(i_col, i);
+                c(i, 0 ) = (*this)(i, i_col);
             }
             return c;
         }
@@ -160,7 +160,7 @@ namespace sen
             SEN_ASSERT(rows() == c.rows());
             for (int i = 0; i < rows(); i++)
             {
-                (*this)(i_col, i) = c(0, i);
+                (*this)(i, i_col) = c(i, 0);
             }
         }
         void set_col(int i_col, const Mat<numberOfRows, 1>& c)
@@ -203,10 +203,10 @@ namespace sen
 
             Mat<numberOfRows, numberOfCols> m;
             for (int i_col = 0; i_col < m.cols(); i_col++)
-                for (int i_row = 0; i_row < m.rows(); i_row++)
-                {
-                    m(i_col, i_row) = xs[i_row * numberOfCols + i_col];
-                }
+            for (int i_row = 0; i_row < m.rows(); i_row++)
+            {
+                m(i_row, i_col) = xs[i_row * numberOfCols + i_col];
+            }
             return m;
         }
 
@@ -216,10 +216,10 @@ namespace sen
             Mat<-1, -1> m;
             m.allocate(numberOfRows, numberOfCols);
             for (int i_col = 0; i_col < m.cols(); i_col++)
-                for (int i_row = 0; i_row < m.rows(); i_row++)
-                {
-                    m(i_col, i_row) = xs[i_row * numberOfCols + i_col];
-                }
+            for (int i_row = 0; i_row < m.rows(); i_row++)
+            {
+                m(i_row, i_col) = xs[i_row * numberOfCols + i_col];
+            }
             return m;
         }
     };
@@ -244,7 +244,7 @@ namespace sen
             printf("  row[%d]=", i_row);
             for (int i_col = 0; i_col < m.cols(); i_col++)
             {
-                printf("%.8f, ", m(i_col, i_row));
+                printf("%.8f, ", m(i_row, i_col));
             }
             printf("\n");
         }
@@ -261,15 +261,15 @@ namespace sen
         r.allocate(lhs.rows(), rhs.cols());
 
         for (int dst_row = 0; dst_row < r.rows(); dst_row++)
-            for (int dst_col = 0; dst_col < r.cols(); dst_col++)
+        for (int dst_col = 0; dst_col < r.cols(); dst_col++)
+        {
+            float value = 0.0f;
+            for (int i = 0; i < lhs.cols(); i++)
             {
-                float value = 0.0f;
-                for (int i = 0; i < lhs.cols(); i++)
-                {
-                    value += lhs(i, dst_row) * rhs(dst_col, i);
-                }
-                r(dst_col, dst_row) = value;
+                value += lhs(dst_row, i) * rhs(i, dst_col);
             }
+            r(dst_row, dst_col) = value;
+        }
 
         return r;
     }
@@ -284,10 +284,10 @@ namespace sen
         r.allocate(lhs.rows(), lhs.cols());
 
         for (int dst_row = 0; dst_row < r.rows(); dst_row++)
-            for (int dst_col = 0; dst_col < r.cols(); dst_col++)
-            {
-                r(dst_col, dst_row) = lhs(dst_col, dst_row) - rhs(dst_col, dst_row);
-            }
+        for (int dst_col = 0; dst_col < r.cols(); dst_col++)
+        {
+            r(dst_row, dst_col) = lhs(dst_row, dst_col) - rhs(dst_row, dst_col);
+        }
 
         return r;
     }
@@ -303,7 +303,7 @@ namespace sen
         {
             for (int i_col = 0; i_col < m.cols(); i_col++)
             {
-                r(i_row, i_col) = m(i_col, i_row);
+                r(i_col, i_row) = m(i_row, i_col);
             }
         }
         return r;
