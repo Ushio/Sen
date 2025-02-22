@@ -140,6 +140,7 @@ namespace sen
         }
 
         using ColType = typename cond<numberOfRows == -1 && numberOfCols == -1, Mat<-1, -1>, Mat<numberOfRows, 1>>::type;
+        using RowType = typename cond<numberOfRows == -1 && numberOfCols == -1, Mat<-1, -1>, Mat<1, numberOfCols>>::type;
 
         ColType col(int i_col) const
         {
@@ -169,15 +170,31 @@ namespace sen
             set_col<numberOfRows, 1>(i_col, c);
         }
 
-        //Mat<1, numberOfCols> row(int i_row) const {
-        //    SEN_ASSERT(0 <= i_row && i_row < rows() && "");
-        //    Mat<1, numberOfCols> r;
-        //    for (int i = 0; i < cols(); i++)
-        //    {
-        //        r(i, 0) = (*this)(i, i_row);
-        //    }
-        //    return r;
-        //}
+        RowType row(int i_row) const 
+        {
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "");
+            RowType r;
+            r.allocate(1, cols());
+            for (int i = 0; i < cols(); i++)
+            {
+                r(0, i) = (*this)(i_row, i);
+            }
+            return r;
+        }
+        template<int M, int N>
+        void set_row(int i_row, const Mat<M, N>& r /* static or dynamic */)
+        {
+            SEN_ASSERT(0 <= i_row && i_row < rows() && "");
+            SEN_ASSERT(cols() == r.cols());
+            for (int i = 0; i < cols(); i++)
+            {
+                (*this)(i_row, i) = r(0, i);
+            }
+        }
+        void set_row(int i_row, const Mat<1, numberOfCols>& r)
+        {
+            set_row<1, numberOfCols>(i_row, r);
+        }
 
         float* begin() { return &m_storage[0]; }
         float* end() { return &m_storage[0] + m_storage.size(); }

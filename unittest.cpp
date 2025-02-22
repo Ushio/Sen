@@ -55,15 +55,29 @@ TEST_CASE("Col") {
 
     //sen::print(A.col(2));
     //sen::print(sen::MatDyn(A).col(2));
+    REQUIRE(A.col(2) == sen::MatDyn(A).col(2));
 
     A.set_col(2, sen::mat_of<3, 1>(1)(1)(1));
 
-    sen::Mat<3, 4> ref = sen::mat_of<3, 4>
+    sen::Mat<3, 4> ref_c = sen::mat_of<3, 4>
         (1)(2)(1)(4)
         (11)(22)(1)(44)
         (111)(222)(1)(444);
 
-    REQUIRE(A == ref);
+    REQUIRE(A == ref_c);
+
+    //sen::print(A.row(2));
+    //sen::print(sen::MatDyn(A).row(2));
+    REQUIRE(A.row(2) == sen::MatDyn(A).row(2));
+
+    A.set_row(1, sen::mat_of<1, 4>(1)(1)(1)(1));
+
+    sen::Mat<3, 4> ref_r = sen::mat_of<3, 4>
+        (1)(2)(1)(4)
+        (1)(1)(1)(1)
+        (111)(222)(1)(444);
+
+    REQUIRE(A == ref_r);
 }
 
 TEST_CASE("Copy", "") {
