@@ -47,6 +47,25 @@ TEST_CASE("Index", "") {
     }
 }
 
+TEST_CASE("Col") {
+    sen::Mat<3, 4> A = sen::mat_of<3, 4>
+        (1)(2)(3)(4)
+        (11)(22)(33)(44)
+        (111)(222)(333)(444);
+
+    //sen::print(A.col(2));
+    //sen::print(sen::MatDyn(A).col(2));
+
+    A.set_col(2, sen::mat_of<3, 1>(1)(1)(1));
+
+    sen::Mat<3, 4> ref = sen::mat_of<3, 4>
+        (1)(2)(1)(4)
+        (11)(22)(1)(44)
+        (111)(222)(1)(444);
+
+    REQUIRE(A == ref);
+}
+
 TEST_CASE("Copy", "") {
     sen::Mat<2, 3> A = sen::mat_of<2, 3>
         (1)(2)(3)

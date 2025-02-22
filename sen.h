@@ -181,7 +181,7 @@ namespace sen
 
         float* begin() { return &m_storage[0]; }
         float* end() { return &m_storage[0] + m_storage.size(); }
-        const float* begin() const { return m_storage[0]; }
+        const float* begin() const { return &m_storage[0]; }
         const float* end() const { return &m_storage[0] + m_storage.size(); }
 
         Storage<numberOfRows, numberOfCols> m_storage;
@@ -242,6 +242,29 @@ namespace sen
             printf("\n");
         }
         printf("}\n");
+    }
+
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    bool operator==(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    {
+        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_rows == rhs_rows, "invalid comparison");
+        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_cols, "invalid comparison");
+        SEN_ASSERT(lhs.cols() == rhs.cols() && "invalid comparison");
+        SEN_ASSERT(lhs.rows() == rhs.rows() && "invalid comparison");
+
+        for (int i = 0; i < lhs.size(); i++)
+        {
+            if (lhs[i] != rhs[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    bool operator!=(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    {
+        return !(lhs == rhs);
     }
 
     template <int rows, int cols>
