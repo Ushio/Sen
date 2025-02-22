@@ -8,13 +8,87 @@
 
 namespace sen
 {
+    template<bool B, class T, class F>
+    struct cond { using type = T; };
+
+    template<class T, class F>
+    struct cond<false, T, F> { using type = F; };
+
     // Example of Mat<3, 2>
     // o, o
     // o, o
     // o, o
 
-    //template <int numberOfRows, int numberOfCols>
-    //struct RowMajorInitializer;
+    template <int numberOfRows, int numberOfCols>
+    struct Storage
+    {
+        void allocate(int numberOfRows, int numberOfCols) {}
+
+        int rows() const { return numberOfRows; }
+        int cols() const { return numberOfCols; }
+        int size() const { return numberOfRows * numberOfCols; }
+
+        float& operator[](int i)
+        {
+            SEN_ASSERT(0 <= i && i < size() && "out of bounds");
+            return m_storage[i];
+        }
+        const float& operator[](int i) const
+        {
+            SEN_ASSERT(0 <= i && i < size() && "out of bounds");
+            return m_storage[i];
+        }
+
+        float m_storage[numberOfCols * numberOfRows];
+    };
+
+    template <>
+    struct Storage<-1, -1>
+    {
+        Storage() {}
+        Storage(const Storage<-1, -1>& rhs)
+        {
+            allocate(rhs.rows(), rhs.cols());
+            for (int i = 0; i < rhs.size(); i++)
+            {
+                m_storage[i] = rhs[i];
+            }
+        }
+        void operator=(const Storage<-1, -1>& rhs)
+        {
+            allocate(rhs.rows(), rhs.cols());
+            for (int i = 0; i < rhs.size(); i++)
+            {
+                m_storage[i] = rhs[i];
+            }
+        }
+        void allocate(int M, int N)
+        {
+            m_numberOfRows = M;
+            m_numberOfCols = N;
+            delete[] m_storage;
+            m_storage = new float[M * N];
+        }
+
+        int rows() const { return m_numberOfRows; }
+        int cols() const { return m_numberOfCols; }
+        int size() const { return m_numberOfRows * m_numberOfCols; }
+
+        float& operator[](int i)
+        {
+            SEN_ASSERT(0 <= i && i < size() && "out of bounds");
+            return m_storage[i];
+        }
+        const float& operator[](int i) const
+        {
+            SEN_ASSERT(0 <= i && i < size() && "out of bounds");
+            return m_storage[i];
+        }
+
+        int m_numberOfRows = 0;
+        int m_numberOfCols = 0;
+        float* m_storage = 0;
+    };
 
     template <int numberOfRows, int numberOfCols>
     struct Mat
@@ -24,40 +98,56 @@ namespace sen
         template <int M, int N>
         Mat(const Mat<M, N>& rhs /* static or dynamic */)
         {
+            m_storage.allocate(M, N);
+
             SEN_ASSERT(rows() == rhs.rows() && "dim mismatch");
             SEN_ASSERT(cols() == rhs.cols() && "dim mismatch");
 
-            for (int i_col = 0; i_col < rhs.cols(); i_col++)
-            for (int i_row = 0; i_row < rhs.rows(); i_row++)
+            for (int i = 0; i < rhs.size(); i++)
             {
-                (*this)(i_col, i_row) = rhs(i_col, i_row);
+                m_storage[i] = rhs[i];
             }
         }
 
-        static_assert(0 <= numberOfRows, "");
-        static_assert(0 <= numberOfCols, "");
+        void allocate(int M, int N)
+        {
+            m_storage.allocate(M, N);
+        }
 
-        int rows() const { return numberOfRows; }
-        int cols() const { return numberOfCols; }
+        int rows() const { return m_storage.rows(); }
+        int cols() const { return m_storage.cols(); }
+        int size() const { return m_storage.size(); }
 
         float& operator()(int i_col, int i_row)
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
             SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
-            return m_storage[i_col][i_row];
+            return m_storage[i_col * m_storage.rows() + i_row];
         }
         const float& operator()(int i_col, int i_row) const
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
             SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
-            return m_storage[i_col][i_row];
+            return m_storage[i_col * m_storage.rows() + i_row];
         }
 
-        Mat<numberOfRows, 1> col(int i_col) const
+        float& operator[](int i)
+        {
+            return m_storage[i];
+        }
+        const float& operator[](int i) const
+        {
+            return m_storage[i];
+        }
+
+        using ColType = typename cond<numberOfRows == -1 && numberOfCols == -1, Mat<-1, -1>, Mat<numberOfRows, 1>>::type;
+
+        ColType col(int i_col) const
         {
             SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
 
-            Mat<numberOfRows, 1> c;
+            ColType c;
+            c.allocate(rows(), 1);
             for (int i = 0; i < rows(); i++)
             {
                 c(0, i) = (*this)(i_col, i);
@@ -80,23 +170,23 @@ namespace sen
             set_col<numberOfRows, 1>(i_col, c);
         }
 
-        Mat<1, numberOfCols> row(int i_row) const {
-            SEN_ASSERT(0 <= i_row && i_row < rows() && "");
+        //Mat<1, numberOfCols> row(int i_row) const {
+        //    SEN_ASSERT(0 <= i_row && i_row < rows() && "");
 
-            Mat<1, numberOfCols> r;
-            for (int i = 0; i < cols(); i++)
-            {
-                r(i, 0) = (*this)(i, i_row);
-            }
-            return r;
-        }
+        //    Mat<1, numberOfCols> r;
+        //    for (int i = 0; i < cols(); i++)
+        //    {
+        //        r(i, 0) = (*this)(i, i_row);
+        //    }
+        //    return r;
+        //}
 
-        float* begin() { return &m_storage[0][0]; }
-        float* end() { return &m_storage[0][0] + numberOfCols * numberOfRows; }
-        const float* begin() const { return m_storage[0][0]; }
-        const float* end() const { return &m_storage[0][0] + numberOfCols * numberOfRows; }
+        float* begin() { return &m_storage[0]; }
+        float* end() { return &m_storage[0] + m_storage.size(); }
+        const float* begin() const { return m_storage[0]; }
+        const float* end() const { return &m_storage[0] + m_storage.size(); }
 
-        float m_storage[numberOfCols][numberOfRows];
+        Storage<numberOfRows, numberOfCols> m_storage;
     };
 
     template <int numberOfRows, int numberOfCols>
@@ -122,6 +212,19 @@ namespace sen
             }
             return m;
         }
+
+        operator Mat<-1, -1>() const {
+            SEN_ASSERT(index == numberOfRows * numberOfCols && "initialize failure");
+
+            Mat<-1, -1> m;
+            m.allocate(numberOfRows, numberOfCols);
+            for (int i_col = 0; i_col < m.cols(); i_col++)
+            for (int i_row = 0; i_row < m.rows(); i_row++)
+            {
+                m(i_col, i_row) = xs[i_row * numberOfCols + i_col];
+            }
+            return m;
+        }
     };
 
     template <int numberOfRows, int numberOfCols>
@@ -133,153 +236,7 @@ namespace sen
         return initializer(v);
     }
 
-    template <int rows, int cols>
-    void allocate_if_needed(Mat<rows, cols>* m, int numberOfRows, int numberOfCols)
-    {
-    }
-
-    // Dynamic Specialization, only for cpu
-    // Do not support any binary operation of (Dynamic, Static)
-    // Please use (Dynamic, Dynamic) or (Static, Static)
-
-    template <>
-    struct Mat<-1, -1>
-    {
-        Mat()
-        {
-        }
-        ~Mat()
-        {
-            delete[] m_storage;
-            m_storage = 0;
-        }
-        Mat(const Mat& rhs)
-        {
-            allocate(rhs.rows(), rhs.cols());
-
-            for (int i = 0; i < rhs.rows() * rhs.cols(); i++)
-            {
-                m_storage[i] = rhs.m_storage[i];
-            }
-        }
-
-        template <int M, int N>
-        void operator=(const Mat<M, N>& rhs)
-        {
-            allocate(rhs.rows(), rhs.cols());
-
-            for (int i_col = 0; i_col < rhs.cols(); i_col++)
-            for (int i_row = 0; i_row < rhs.rows(); i_row++)
-            {
-                (*this)(i_col, i_row) = rhs(i_col, i_row);
-            }
-        }
-        void operator=(const Mat& rhs)
-        {
-            this->operator=<-1,-1>(rhs);
-        }
-
-        template <int M, int N>
-        Mat(const Mat<M, N>& rhs)
-        {
-            allocate(rhs.rows(), rhs.cols());
-
-            for (int i_col = 0; i_col < rhs.cols(); i_col++)
-            for (int i_row = 0; i_row < rhs.rows(); i_row++)
-            {
-                (*this)(i_col, i_row) = rhs(i_col, i_row);
-            }
-        }
-        template <int M, int N>
-        Mat(const RowMajorInitializer<M, N>& rhs_init)
-        {
-            Mat<M, N> rhs = rhs_init;
-            allocate(rhs.rows(), rhs.cols());
-
-            for (int i_col = 0; i_col < rhs.cols(); i_col++)
-            for (int i_row = 0; i_row < rhs.rows(); i_row++)
-            {
-                (*this)(i_col, i_row) = rhs(i_col, i_row);
-            }
-        }
-
-        void allocate(int numberOfRows, int numberOfCols)
-        {
-            m_numberOfRows = numberOfRows;
-            m_numberOfCols = numberOfCols;
-            delete[] m_storage;
-            m_storage = new float[numberOfRows * numberOfCols];
-        }
-
-        int rows() const { return m_numberOfRows; }
-        int cols() const { return m_numberOfCols; }
-
-        float& operator()(int i_col, int i_row)
-        {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
-            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
-            return m_storage[i_col * m_numberOfRows + i_row];
-        }
-        const float& operator()(int i_col, int i_row) const
-        {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
-            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
-            return m_storage[i_col * m_numberOfRows + i_row];
-        }
-
-        Mat<-1, -1> col(int i_col) const {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
-
-            Mat<-1, -1> c;
-            c.allocate(rows(), 1);
-            for (int i = 0; i < rows(); i++)
-            {
-                c(0, i) = (*this)(i_col, i);
-            }
-            return c;
-        }
-
-        template<int M, int N>
-        void set_col(int i_col, const Mat<M, N>& c)
-        {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
-            SEN_ASSERT(rows() == c.rows());
-            for (int i = 0; i < rows(); i++)
-            {
-                (*this)(i_col, i) = c(0, i);
-            }
-        }
-
-        Mat<-1, -1> row(int i_row) const {
-            SEN_ASSERT(0 <= i_row && i_row < rows() && "out of bounds");
-
-            Mat<-1, -1> r;
-            r.allocate(1, cols());
-            for (int i = 0; i < cols(); i++)
-            {
-                r(i, 0) = (*this)(i, i_row);
-            }
-            return r;
-        }
-
-        float* begin() { return m_storage; }
-        float* end() { return m_storage + m_numberOfCols * m_numberOfRows; }
-        const float* begin() const { return m_storage; }
-        const float* end() const { return m_storage + m_numberOfCols * m_numberOfRows; }
-
-        int m_numberOfRows = 0;
-        int m_numberOfCols = 0;
-        float* m_storage = 0;
-    };
-
     using MatDyn = Mat<-1, -1>;
-
-    template <>
-    void allocate_if_needed<-1, -1>(MatDyn *m, int numberOfRows, int numberOfCols)
-    {
-        m->allocate(numberOfRows, numberOfCols);
-    }
-    
 
     template <int rows, int cols>
     void print(const Mat<rows, cols>& m)
@@ -304,7 +261,7 @@ namespace sen
         static_assert(lhs_cols == rhs_rows, "invalid multiplication");
         SEN_ASSERT(lhs.cols() == rhs.rows() && "invalid multiplication");
 
-        allocate_if_needed(&r, lhs.rows(), rhs.cols());
+        r.allocate(lhs.rows(), rhs.cols());
         
         for (int dst_row = 0; dst_row < r.rows(); dst_row++)
         for (int dst_col = 0; dst_col < r.cols(); dst_col++)
@@ -327,7 +284,7 @@ namespace sen
         static_assert(lhs_cols == rhs_cols, "invalid substruct");
         Mat<lhs_rows, lhs_cols> r;
 
-        allocate_if_needed(&r, lhs.rows(), lhs.cols());
+        r.allocate(lhs.rows(), lhs.cols());
 
         for (int dst_row = 0; dst_row < r.rows(); dst_row++)
         for (int dst_col = 0; dst_col < r.cols(); dst_col++)
@@ -343,7 +300,7 @@ namespace sen
     {
         Mat<cols, rows> r;
 
-        allocate_if_needed(&r, m.cols(), m.rows());
+        r.allocate(m.cols(), m.rows());
 
         for (int i_row = 0; i_row < m.rows(); i_row++)
         {
@@ -431,6 +388,12 @@ void eigen_vectors_of_cov(glm::vec2* eigen0, glm::vec2* eigen1, const glm::mat2&
 int main() {
     using namespace pr;
 
+    //{
+    //    sen::Storage<-1, -1> d;
+    //    sen::Mat<2, 3> A;
+    //    sen::Mat<-1, -1> B;
+    //}
+
     {
         sen::Mat<2, 3> A = sen::mat_of<2, 3>
             (1)(2)(3)
@@ -452,24 +415,34 @@ int main() {
             (11 )(22 )(33 );
         sen::print(A);
         sen::print(sen::MatDyn(A));
+        sen::print(sen::Mat<2, 3>(sen::MatDyn(A)));
         sen::print(A.col(2));
         sen::print(sen::MatDyn(A).col(2));
 
-        sen::print(A.row(1));
-        sen::print(sen::MatDyn(A).row(1));
-
-
-        sen::Mat<2, 3> B = sen::MatDyn(A);
-        sen::print(B);
-        sen::MatDyn(sen::mat_of<2, 1>
-            (0)
-            (0)
-        );
-        sen::MatDyn DA(A);
-        A.set_col(1, sen::mat_of<2, 1>(0)(0));
+        A.set_col(0, sen::mat_of<2, 1>(0)(0));
         sen::print(A);
 
-        printf("");
+        sen::Mat<2, 3> DynA = sen::MatDyn(A);
+        DynA.set_col(0, sen::mat_of<2, 1>(0)(0));
+        sen::print(DynA);
+        //sen::print(sen::MatDyn(A).row(1));
+
+        sen::MatDyn C = sen::mat_of<2, 3>
+            (1)(2)(3)
+            (11)(22)(33);
+        sen::print(C);
+
+        //sen::Mat<2, 3> B = sen::MatDyn(A);
+        //sen::print(B);
+        ////sen::MatDyn(sen::mat_of<2, 1>
+        ////    (0)
+        ////    (0)
+        ////);
+        //sen::MatDyn DA(A);
+        //
+        //sen::print(A);
+
+        //printf("");
     }
     {
         PCG rng;
