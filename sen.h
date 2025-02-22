@@ -97,7 +97,8 @@ namespace sen
         Mat(const Mat<M, N>& rhs /* static or dynamic */)
         {
             m_storage.allocate(M, N);
-
+            
+            static_assert(numberOfRows == -1 /*ignore dynamic case*/  || M == -1 /*ignore dynamic case*/ || (numberOfRows == M && numberOfCols == N));
             SEN_ASSERT(rows() == rhs.rows() && "dim mismatch");
             SEN_ASSERT(cols() == rhs.cols() && "dim mismatch");
 
