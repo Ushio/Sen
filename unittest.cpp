@@ -61,6 +61,28 @@ TEST_CASE("Copy", "") {
     for (float v : A - C) {
         REQUIRE(v == 0.0f);
     }
+
+    sen::MatDyn D = sen::mat_of<2, 3>
+        (1)(2)(3)
+        (11)(22)(33);
+}
+
+TEST_CASE("Sub") {
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<4, 5> A;
+        for (float& v : A) { v = rng.uniformf(); }
+        
+        sen::MatDyn B = A;
+
+        for (float v : B - A) {
+            REQUIRE(v == 0.0f);
+        }
+        for (float v : A - B) {
+            REQUIRE(v == 0.0f);
+        }
+    }
 }
 
 TEST_CASE("Mul") {

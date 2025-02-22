@@ -213,15 +213,7 @@ namespace sen
 
         operator Mat<-1, -1>() const {
             SEN_ASSERT(index == numberOfRows * numberOfCols && "initialize failure");
-
-            Mat<-1, -1> m;
-            m.allocate(numberOfRows, numberOfCols);
-            for (int i_col = 0; i_col < m.cols(); i_col++)
-            for (int i_row = 0; i_row < m.rows(); i_row++)
-            {
-                m(i_row, i_col) = xs[i_row * numberOfCols + i_col];
-            }
-            return m;
+            return this->operator sen::Mat<numberOfRows, numberOfCols>();
         }
     };
 
@@ -282,11 +274,12 @@ namespace sen
     }
 
     template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    Mat<lhs_rows, rhs_cols> operator-(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator-(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
     {
-        static_assert(lhs_rows == rhs_rows, "invalid substruct");
-        static_assert(lhs_cols == rhs_cols, "invalid substruct");
-        Mat<lhs_rows, lhs_cols> r;
+        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_rows == rhs_rows, "invalid substruct");
+        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_cols, "invalid substruct");
+       
+        typename ConservativelyDynamic<lhs_rows, rhs_cols>::type r;
 
         r.allocate(lhs.rows(), lhs.cols());
 
