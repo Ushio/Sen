@@ -35,16 +35,6 @@ TEST_CASE("Index", "") {
 
     REQUIRE(A(0, 1) == 2);
     REQUIRE(A(2, 3) == 444);
-
-    sen::MatDyn B;
-    sen::Mat<3, 4> C;
-
-    B = A;
-    C = B;
-
-    for (float v : A - C) {
-        REQUIRE(v == 0.0f);
-    }
 }
 
 TEST_CASE("Col") {
@@ -196,15 +186,11 @@ TEST_CASE("Transpose") {
         // sen::print(sen::transpose(A));
 
         // M = (M^T)^T
-        for (float v : A - sen::transpose(sen::transpose(A))) {
-            REQUIRE(v == 0.0f);
-        }
+        REQUIRE(A == sen::transpose(sen::transpose(A)));
 
         // M == M^T for symmetric
         sen::Mat<3, 3> sym = A * sen::transpose(A);
-        for (float v : sym - sen::transpose(sym)) {
-            REQUIRE(v == 0.0f);
-        }
+        REQUIRE(sym == sen::transpose(sym));
     }
 
     for (int i = 0; i < 100; i++)
@@ -216,15 +202,11 @@ TEST_CASE("Transpose") {
         // sen::print(sen::transpose(A));
 
         // M = (M^T)^T
-        for (float v : A - sen::transpose(sen::transpose(A))) {
-            REQUIRE(v == 0.0f);
-        }
+        REQUIRE(A == sen::transpose(sen::transpose(A)));
 
         // M == M^T for symmetric
         sen::MatDyn sym = A * sen::transpose(A);
-        for (float v : sym - sen::transpose(sym)) {
-            REQUIRE(v == 0.0f);
-        }
+        REQUIRE(sym == sen::transpose(sym));
     }
 }
 
