@@ -285,3 +285,34 @@ TEST_CASE("2x2 inverse", "") {
         }
     }
 }
+
+TEST_CASE("pseudo inverse(overdetermined)", "") {
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<5, 2> A;
+        for (float& v : A) { v = rng.uniformf(); }
+
+        sen::Mat<5, 1> b;
+        for (float& v : b) { v = rng.uniformf(); }
+
+        sen::Mat<2, 5> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
+
+        sen::Mat<2, 1> best_x = pinvA * b;
+        sen::Mat<5, 1> best_b = A * best_x;
+        sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
+
+        // any offsetted x can't be better than best_x
+        for (int i = 0; i < 64; i++)
+        {
+            sen::Mat<2, 1> x = best_x;
+            x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+            x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+
+            sen::Mat<5, 1> not_best_b = A * x;
+            sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
+
+            REQUIRE(min_cost(0, 0) <= cost(0, 0));
+        }
+    }
+}
