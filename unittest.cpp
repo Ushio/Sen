@@ -242,6 +242,25 @@ TEST_CASE("scaler", "") {
     }
 }
 
+TEST_CASE("identity", "") {
+
+    {
+        sen::Mat<10, 10> I;
+        I.set_identity();
+        REQUIRE(I * I == I);
+    }
+
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        int dim = 1 + rng.uniform() % 100;
+        sen::MatDyn I;
+        I.allocate(dim, dim);
+        I.set_identity();
+        REQUIRE(I * I == I);
+    }
+}
+
 TEST_CASE("2x2 inverse", "") {
     pr::PCG rng;
     for (int i = 0; i < 100; i++)
@@ -249,6 +268,20 @@ TEST_CASE("2x2 inverse", "") {
         sen::Mat<2, 2> A;
         for (float& v : A) { v = rng.uniformf(); }
 
+        sen::Mat<2, 2> invA = sen::inverse(A);
 
+        //print(A * invA);
+        //print(invA * A);
+
+        sen::Mat<2, 2> I;
+        I.set_identity();
+
+        for (float v : I - A * invA) {
+            REQUIRE(fabs(v) < 1.0e-4f );
+        }
+
+        for (float v : I - invA * A) {
+            REQUIRE(fabs(v) < 1.0e-4f);
+        }
     }
 }

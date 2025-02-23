@@ -12,7 +12,6 @@ namespace sen
     template<class T, class F>
     struct cond<false, T, F> { using type = F; };
 
-
     template <int numberOfRows, int numberOfCols>
     struct Storage
     {
@@ -111,6 +110,17 @@ namespace sen
         void allocate(int M, int N)
         {
             m_storage.allocate(M, N);
+        }
+
+        void set_identity()
+        {
+            SEN_ASSERT(rows() == cols() && "dim mismatch");
+
+            for (int i_col = 0; i_col < cols(); i_col++)
+            for (int i_row = 0; i_row < rows(); i_row++)
+            {
+                (*this)(i_row, i_col) = i_row == i_col ? 1.0f : 0.0f;
+            }
         }
 
         int rows() const { return m_storage.rows(); }
@@ -385,14 +395,6 @@ namespace sen
         static_assert(rows == cols, "must be square");
         static_assert(0, "not implemented");
     }
-    template <>
-    Mat<2, 2> inverse(const Mat<2, 2>& A)
-    {
-        Mat<2, 2> r;
-
-        return r;
-    }
-
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
     {
@@ -404,4 +406,14 @@ namespace sen
     {
         return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
     }
+
+    template <>
+    Mat<2, 2> inverse(const Mat<2, 2>& A)
+    {
+        Mat<2, 2> r = mat_of<2,2>
+            (A(1, 1))(-A(0, 1))
+            (-A(1, 0))(A(0, 0));
+        return r / det(A);
+    }
+
 }
