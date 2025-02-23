@@ -111,7 +111,13 @@ namespace sen
         {
             m_storage.allocate(M, N);
         }
-
+        void set_zero()
+        {
+            for (int i = 0; i < size(); i++)
+            {
+                m_storage[i] = 0.0f;
+            }
+        }
         void set_identity()
         {
             SEN_ASSERT(rows() == cols() && "dim mismatch");

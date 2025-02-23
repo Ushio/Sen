@@ -92,7 +92,7 @@ int main() {
     Initialize(config);
 
     Camera3D camera;
-    camera.origin = { 0, 0, 4 };
+    camera.origin = { 0, 0, 8 };
     camera.lookat = { 0, 0, 0 };
     camera.zUp = false;
 
@@ -112,206 +112,36 @@ int main() {
         DrawGrid(GridAxis::XY, 1.0f, 10, { 128, 128, 128 });
         DrawXYZAxis(1.0f);
 
-        static PCG pcg;
+        std::vector<float> xs = { 1, 2, 3, 4, 5.06f, 6.0f };
+        std::vector<float> ys = { 1, 3, 2, 6, 7.23, 7 };
 
-        glm::vec3 b1 = { 0.5, 0.6, -0.2f };
-        glm::vec3 b2 = { -2.0f, 1.0f, 0.4f };
-        //glm::vec3 b1 = { glm::mix(-2.0f, 2.0f,  pcg.uniformf()), glm::mix(-2.0f, 2.0f,  pcg.uniformf()) ,glm::mix(-2.0f, 2.0f,  pcg.uniformf()) };
-        //glm::vec3 b2 = { glm::mix(-2.0f, 2.0f,  pcg.uniformf()), glm::mix(-2.0f, 2.0f,  pcg.uniformf()) ,glm::mix(-2.0f, 2.0f,  pcg.uniformf()) };
-
-        //b2 = glm::vec3(b1.x, b1.z, -b1.y );
-
-        //float X = glm::dot(b1, b2) * 2.0f;
-        //float Y = glm::dot(b1, b1) - glm::dot(b2, b2);
-
-        //X = 1;
-        //Y = 1;
-
-        static glm::vec3 P = {2, 1, 0.0f};
-        ManipulatePosition(camera, &P, 0.5f);
-
-        float X = P.x;
-        float Y = P.y;
-
-        float two_theta = atan(Y / X);
-        // float two_theta = atan2(Y, X);
-
-        //float cos2Theta = cos(two_theta);
-        //float sin2Theta = sin(two_theta);
-        //float originalZero =
-        //    cos2Theta * Y - sin2Theta * X;
-        //printf("originalZero %f\n", originalZero);
-
-        float s = sin(two_theta * 0.5f);
-        float c = cos(two_theta * 0.5f);
-
-        DrawSphere({ c, s, 0 }, 0.06, { 255,255,255 });
-
-        // 誤差が大きいが、うごいた
-        //{
-        //    float Px = glm::dot(b1, b1) - glm::dot(b2, b2);
-        //    float Py = 2.0f * glm::dot(b1, b2);
-        //    //float Px = P.y;
-        //    //float Py = P.x;
-
-        //    glm::vec2 H = { Px + sqrtf(Px * Px + Py * Py), Py };
-
-        //    DrawSphere({ H.x, H.y, 0 }, 0.04, { 0,255,0 });
-        //    //float ta = H.y / H.x;
-        //    //float k = atan(ta) * 2.0f;
-        //    //c = cos(atan(ta));
-        //    //s = sin(atan(ta));
-        //    H = glm::normalize(H);
-        //    c = H.x;
-        //    s = H.y;
-        //}
-
-        //{
-        //    float Px = glm::dot(b1, b1) - glm::dot(b2, b2);
-        //    float Py = 2.0f * glm::dot(b1, b2);
-        //    //float Px = P.y;
-        //    //float Py = P.x;
-
-        //    glm::vec2 H = glm::vec2{ -Py, Px - sqrtf(Px * Px + Py * Py) };
-
-        //    DrawSphere({ H.x, H.y, 0 }, 0.04, { 255,0,0 });
-
-        //    H = glm::normalize(H);
-        //    c = H.x;
-        //    s = H.y;
-        //}
-        //{
-        //    float tau = 2.0f * glm::dot(b1, b2) / (glm::dot(b1, b1) - glm::dot(b2, b2));
-        //    tau = std::min(tau, FLT_MAX);
-        //    float tau2 = std::min(tau * tau, FLT_MAX);
-        //    glm::vec2 H = glm::vec2( 1.0f + sqrtf( 1.0f + tau2 ), tau );
-        //    float L = glm::length(H);
-        //    c = H.x / L;
-        //    s = H.y / L;
-        //}
-        //{
-        //    float tau = (glm::dot(b1, b1) - glm::dot(b2, b2)) * 0.5f / glm::dot(b1, b2);
-        //    tau = sqrt(FLT_MAX);
-        //    glm::vec2 H = glm::vec2(tau + sqrtf(1.0f + tau * tau), 1.0f);
-        //    float l2 = glm::dot(H, H);
-        //    float lll = tau + sqrtf(1.0f + tau * tau);
-
-        //    float L = glm::length(H);
-        //    c = H.x / L;
-        //    s = H.y / L;
-        //}
-        //{
-        //    float Py = 2.0f * glm::dot(b1, b2); 
-        //    float Px = glm::dot(b1, b1) - glm::dot(b2, b2);
-
-        //    float PL = sqrtf( Px * Px + Py * Py );
-        //    glm::vec2 H = glm::vec2(Py, PL - Px);
-        //    float L = glm::length(H);
-        //    c = H.x / L;
-        //    s = H.y / L;
-        //}
+        for (int i = 0; i < xs.size(); i++)
         {
-            //float Py = 2.0f * glm::dot(b1, b2);
-            //float Px = glm::dot(b1, b1) - glm::dot(b2, b2);
-            float Px = X;
-            float Py = Y;
-
-            float PL = sqrtf(Px * Px + Py * Py);
-            if (PL == 0.0f)
-            {
-                c = 1.0f;
-                s = 0.0f;
-            }
-            else
-            {
-                glm::vec2 H;
-                //if (Px < 0.0f)
-                //{
-                //    H = glm::vec2(Py, PL - Px);
-                //    //H = { H.y, -H.x };
-                //    DrawLine({ 0,0,0 }, { H.x, H.y, 0 }, { 255, 0,0 });
-                //}
-                ////else
-                //{
-                //    H = glm::vec2(PL + Px, Py);
-                //    //DrawLine({ 0,0,0 }, { H.x, H.y, 0 }, { 0, 255,0 });
-                //}
-                float sgn = 0.0f < Px ? 1.0f : -1.0f;
-                H = glm::vec2(PL + Px * sgn, Py * sgn);
-                DrawLine({ 0,0,0 }, { H.x, H.y, 0 }, { 0, 0,255 });
-
-                //float L = glm::length(H);
-                //float tanTheta = H.y / H.x;
-                //float cosTheta = H.x / L;
-                //printf(" c %f %f\n", c, cosTheta);
-                //printf(" s %f %f\n", s, cosTheta * tanTheta);
-                //DrawSphere({ cosTheta, cosTheta * tanTheta, 0 }, 0.04, { 255,0,0 });
-
-                float L = glm::length(H);
-                //printf(" P %f %f\n", Px, Py);
-                //printf(" c %f %f\n", c, H.x / L);
-                //printf(" s %f %f\n", s, H.y / L);
-                c = H.x / L;
-                s = H.y / L;
-
-                //float theta = atan(H.x / H.y);
-                //printf(" 2 theta %f %f\n", theta * 2, two_theta);
-
-                DrawSphere({ c, s, 0 }, 0.04, { 255,0,0 });
-            }
+            glm::vec3 p = { xs[i], ys[i], 0.0f };
+            DrawCircle(p, { 0, 0, 1 }, { 255,0,0 }, 0.06f);
         }
 
-
-        //DrawSphere({ X, Y, 0.0f }, 0.02f, { 255,0,0 });
-
-        // want to make this zero
-        //float zero = X * (c * c - s * s) + c * s * Y * 0.5f;
-        //printf("%f\n", zero);
-
-        //float zero = glm::dot(b1, b2) * (c * c - s * s) + c * s * (glm::dot(b2, b2) - glm::dot(b1, b1));
-        float zero = 0.5f * Y * (c * c - s * s) + c * s * (-X);
-        //printf("%.10f\n", zero);
-#if 0
-        static float m00 = 0.1f;
-        static float m10 = 0.4f;
-        static float m01 = -0.1f;
-        static float m11 = 1.5f;
-        glm::mat2 M = {
-            m00, m10, m01, m11
-        };
-
-        //float det;
-        //float lambda0;
-        //float lambda1;
-        //eignValues(&lambda0, &lambda1, &det, M);
-
-        //glm::vec2 eigen0, eigen1;
-        //eigen_vectors_of_cov(&eigen0, &eigen1, M, lambda0, lambda1);
-
-        //DrawArrow({}, { eigen0.x, eigen0.y, 0.0f }, 0.01f, { 255,0,0 });
-        //DrawArrow({}, { eigen1.x, eigen1.y, 0.0f }, 0.01f, { 0,255,0 });
-
-        //eigen0 = M * eigen0;
-        //eigen1 = M * eigen1;
-        //DrawArrow({}, { eigen0.x, eigen0.y, 0.0f }, 0.01f, { 255,0,0 });
-        //DrawArrow({}, { eigen1.x, eigen1.y, 0.0f }, 0.01f, { 0,255,0 });
-
-        int N = 1000;
-        CircleGenerator circle(glm::two_pi<float>() / N);
-        for (int i = 0; i < N; i++)
+        // linear regression  
+        sen::Mat<2, 2> A;
+        sen::Mat<2, 1> V;
+        A.set_zero();
+        V.set_zero();
+        for (int i = 0; i < xs.size(); i++)
         {
-            glm::vec2 p = {
-                 circle.cos(),
-                 circle.sin()
-            };
-            glm::vec2 q = M * p;
-            glm::vec3 color = plasma((float)i / N) * 255.0f;
-            DrawPoint({ q.x, q.y, 0.0f }, glm::u8vec3(color), 4);
+            float x = xs[i];
+            float y = ys[i];
+            A(0, 0) += x * x;
+            A(0, 1) += x;
+            A(1, 0) += x;
+            A(1, 1) += 1.0f;
 
-            circle.step();
+            V(0, 0) += x * y;
+            V(1, 0) += y;
         }
-#endif
 
+        sen::Mat<2, 1> ab = sen::inverse(A) * V;
+        auto f = [ab](float x) { return ab(0, 0) * x + ab(1, 0); };
+        DrawLine({ 0.0f, f(0.0f), 0.0f }, { 10.0f, f(10.0f), 0.0f }, { 255,255,0 }, 2);
         
         PopGraphicState();
         EndCamera();
