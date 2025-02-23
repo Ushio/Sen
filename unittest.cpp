@@ -227,3 +227,46 @@ TEST_CASE("Transpose") {
         }
     }
 }
+
+TEST_CASE("scaler", "") {
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<2, 3> A;
+        float s = rng.uniformf();
+        for (float& v : A) { v = rng.uniformf(); }
+
+        //print(A);
+        //print(A * 10.0f);
+        REQUIRE(A * s == s * A);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        sen::MatDyn A;
+        A.allocate(1 + rng.uniform() % 100, 1 + rng.uniform() % 100);
+        float s = rng.uniformf();
+        for (float& v : A) { v = rng.uniformf(); }
+        REQUIRE(A * s == s * A);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<2, 3> A;
+        float s = 1 + rng.uniform() % 100;
+        for (float& v : A) { v = rng.uniform() % 128; }
+
+        REQUIRE(A * s / s == A);
+    }
+}
+
+TEST_CASE("2x2 inverse", "") {
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<2, 2> A;
+        for (float& v : A) { v = rng.uniformf(); }
+
+
+    }
+}

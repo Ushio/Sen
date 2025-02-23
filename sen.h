@@ -332,6 +332,36 @@ namespace sen
         return r;
     }
 
+    // Mat vs scaler
+    template <int rows, int cols>
+    Mat<rows, cols> operator*(const Mat<rows, cols>& m, float x)
+    {
+        Mat<rows, cols> r;
+        r.allocate(m.cols(), m.rows());
+        for (int i = 0; i < m.size(); i++)
+        {
+            r[i] = m[i] * x;
+        }
+        return r;
+    }
+    template <int rows, int cols>
+    Mat<rows, cols> operator*(float x, const Mat<rows, cols>& m)
+    {
+        return m * x;
+    }
+
+    template <int rows, int cols>
+    Mat<rows, cols> operator/(const Mat<rows, cols>& m, float x)
+    {
+        Mat<rows, cols> r;
+        r.allocate(m.cols(), m.rows());
+        for (int i = 0; i < m.size(); i++)
+        {
+            r[i] = m[i] / x;
+        }
+        return r;
+    }
+
     template <int rows, int cols>
     Mat<cols, rows> transpose(const Mat<rows, cols>& m)
     {
@@ -347,5 +377,31 @@ namespace sen
             }
         }
         return r;
+    }
+
+    template <int rows, int cols>
+    Mat<rows, cols> inverse(const Mat<rows, cols>& A)
+    {
+        static_assert(rows == cols, "must be square");
+        static_assert(0, "not implemented");
+    }
+    template <>
+    Mat<2, 2> inverse(const Mat<2, 2>& A)
+    {
+        Mat<2, 2> r;
+
+        return r;
+    }
+
+    template <int rows, int cols>
+    float det(const Mat<rows, cols>& A)
+    {
+        static_assert(rows == cols, "must be square");
+        static_assert(0, "not implemented");
+    }
+    template <>
+    float det(const Mat<2, 2>& A)
+    {
+        return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
     }
 }

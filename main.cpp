@@ -84,57 +84,6 @@ int main() {
     //    sen::Mat<-1, -1> B;
     //}
 
-    {
-        sen::Mat<2, 3> A = sen::mat_of<2, 3>
-            (1)(2)(3)
-            (11)(22)(33);
-
-        sen::MatDyn B;
-        sen::Mat<2, 3> C;
-
-        B = A;
-        C = B;
-
-        for (float v : A - C) {
-            PR_ASSERT(v == 0.0f);
-        }
-    }
-    {
-        sen::Mat<2, 3> A = sen::mat_of<2, 3>
-            (1  )(2  )(3  )
-            (11 )(22 )(33 );
-        sen::print(A);
-        sen::print(sen::MatDyn(A));
-        sen::print(sen::Mat<2, 3>(sen::MatDyn(A)));
-        sen::print(A.col(2));
-        sen::print(sen::MatDyn(A).col(2));
-
-        A.set_col(0, sen::mat_of<2, 1>(0)(0));
-        sen::print(A);
-
-        sen::Mat<2, 3> DynA = sen::MatDyn(A);
-        DynA.set_col(0, sen::mat_of<2, 1>(0)(0));
-        sen::print(DynA);
-        //sen::print(sen::MatDyn(A).row(1));
-
-        sen::MatDyn C = sen::mat_of<2, 3>
-            (1)(2)(3)
-            (11)(22)(33);
-        sen::print(C);
-
-        //sen::Mat<2, 3> B = sen::MatDyn(A);
-        //sen::print(B);
-        ////sen::MatDyn(sen::mat_of<2, 1>
-        ////    (0)
-        ////    (0)
-        ////);
-        //sen::MatDyn DA(A);
-        //
-        //sen::print(A);
-
-        //printf("");
-    }
-    
 
     Config config;
     config.ScreenWidth = 1920;
