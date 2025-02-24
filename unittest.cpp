@@ -315,6 +315,18 @@ TEST_CASE("pseudo inverse(overdetermined)", "") {
 
             REQUIRE(min_cost(0, 0) <= cost(0, 0));
         }
+
+        sen::SVD<5, 2> svd = sen::svd_unordered(A);
+
+        for (auto& s : svd.sigma)
+        {
+            if (s != 0.0f)
+                s = 1.0f / s;
+        }
+        sen::Mat<2, 5> pinvA_svd = sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
+        
+        //sen::print(pinvA);
+        //sen::print(pinvA_svd);
     }
 }
 
