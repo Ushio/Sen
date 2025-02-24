@@ -417,33 +417,6 @@ namespace sen
         return r;
     }
 
-    template <int rows, int cols>
-    Mat<rows, cols> inverse(const Mat<rows, cols>& A)
-    {
-        static_assert(rows == cols, "must be square");
-        static_assert(0, "not implemented");
-    }
-    template <int rows, int cols>
-    float det(const Mat<rows, cols>& A)
-    {
-        static_assert(rows == cols, "must be square");
-        static_assert(0, "not implemented");
-    }
-    template <>
-    float det(const Mat<2, 2>& A)
-    {
-        return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
-    }
-
-    template <>
-    Mat<2, 2> inverse(const Mat<2, 2>& A)
-    {
-        Mat<2, 2> r = mat_of<2,2>
-            (A(1, 1))(-A(0, 1))
-            (-A(1, 0))(A(0, 0));
-        return r / det(A);
-    }
-
     template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
     float v_dot(const Mat<lhs_rows, lhs_cols>& a, const Mat<rhs_rows, rhs_cols>& b)
     {
@@ -546,6 +519,13 @@ namespace sen
         }
         
         svd.V_transposed = inv_sigma * transpose(svd.U) * A;
+
+        //for (int i_row = 0; i_row < svd.V_transposed.rows(); i_row++)
+        //{
+        //    auto c = svd.V_transposed.row(i_row);
+        //    svd.V_transposed.set_row(i_row, c / v_length(transpose(c))); // need zero check?
+        //}
+
         return svd;
     }
 
@@ -568,5 +548,42 @@ namespace sen
             svd_transposed.sigma,
             transpose(svd_transposed.U)
         };
+    }
+
+    template <int dim>
+    Mat<dim, dim> inverse(const Mat<dim, dim>& A)
+    {
+        //static_assert(rows == cols, "must be square");
+        //static_assert(0, "not implemented");
+
+        SVD<dim, dim> svd = svd_unordered(A);
+
+        // TODO, refactor
+        for (auto& s : svd.sigma)
+        {
+            if (s != 0.0f)
+                s = 1.0f / s;
+        }
+        return sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
+    }
+    template <int rows, int cols>
+    float det(const Mat<rows, cols>& A)
+    {
+        static_assert(rows == cols, "must be square");
+        static_assert(0, "not implemented");
+    }
+    template <>
+    float det(const Mat<2, 2>& A)
+    {
+        return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
+    }
+
+    template <>
+    Mat<2, 2> inverse(const Mat<2, 2>& A)
+    {
+        Mat<2, 2> r = mat_of<2, 2>
+            (A(1, 1))(-A(0, 1))
+            (-A(1, 0))(A(0, 0));
+        return r / det(A);
     }
 }

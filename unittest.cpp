@@ -287,6 +287,43 @@ TEST_CASE("2x2 inverse", "") {
     }
 }
 
+TEST_CASE("4x4 inverse", "") {
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<3, 3> A;
+        for (float& v : A) { v = rng.uniformf(); }
+
+        //if (i == 29)
+        //{
+        //    printf("");
+        //}
+        sen::Mat<3, 3> invA = sen::inverse(A);
+        //sen::Mat<3, 3> invA = fromGLM(glm::inverse(toGLM(A)));
+        if (i == 29)
+        {
+            sen::SVD<3, 3> svd = sen::svd_unordered(A);
+            print(sen::transpose(svd.U) * svd.U);
+            print(sen::transpose(svd.V_transposed) * svd.V_transposed);
+        }
+
+        print(A);
+        print(A * invA);
+        print(invA * A);
+
+        sen::Mat<3, 3> I;
+        I.set_identity();
+
+        for (float v : I - A * invA) {
+            REQUIRE(fabs(v) < 1.0e-3f);
+        }
+
+        for (float v : I - invA * A) {
+            REQUIRE(fabs(v) < 1.0e-3f);
+        }
+    }
+}
+
 TEST_CASE("pseudo inverse(overdetermined)", "") {
     pr::PCG rng;
     for (int i = 0; i < 100; i++)
@@ -362,11 +399,11 @@ TEST_CASE("SVD", "") {
 
     sen::SVD_underdetermined<2, 4> svd = svd_unordered_underdetermined(A);
 
-    sen::print(svd.U);
-    sen::print(svd.sigma);
-    sen::print(svd.V_transposed);
+    //sen::print(svd.U);
+    //sen::print(svd.sigma);
+    //sen::print(svd.V_transposed);
     auto comp = svd.U * svd.sigma * svd.V_transposed;
-    print(comp);
+    //print(comp);
     //int N = 3;
     //CYCLIC_BY_ROW(N, index_b0, index_b1)
     //{
