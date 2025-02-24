@@ -473,6 +473,8 @@ namespace sen
     template <int rows, int cols>
     SVD<rows, cols> svd_unordered(const Mat<rows, cols>& A)
     {
+        static_assert(cols <= rows, "use svd_underdetermined_unordered()");
+
         Mat<rows, cols> B = A;
 
         float convergence_previous = FLT_MAX;
@@ -544,13 +546,27 @@ namespace sen
         }
         
         svd.V_transposed = inv_sigma * transpose(svd.U) * A;
-        print(svd.U);
-        print(svd.sigma);
-        print(svd.V_transposed);
-
-        auto comp = svd.U * svd.sigma * svd.V_transposed;
-        print(comp);
-
         return svd;
+    }
+
+    template <int rows, int cols>
+    struct SVD_underdetermined
+    {
+        Mat<rows, rows> U;
+        Mat<rows, rows> sigma;
+        Mat<rows, cols> V_transposed;
+    };
+
+    template <int rows, int cols>
+    SVD_underdetermined<rows, cols> svd_unordered_underdetermined(const Mat<rows, cols>& A)
+    {
+        static_assert(rows < cols, "use svd_underdetermined()");
+
+        SVD<cols, rows> svd_transposed = svd_unordered(transpose(A));
+        return {
+            transpose(svd_transposed.V_transposed),
+            svd_transposed.sigma,
+            transpose(svd_transposed.U)
+        };
     }
 }

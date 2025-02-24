@@ -336,21 +336,25 @@ TEST_CASE("cyclic by row", "")
     }
 }
 TEST_CASE("SVD", "") {
-    sen::Mat<5, 2> A = sen::mat_of<5, 2>
-        (1)(-1)
-        (-1)(1)
-        (1)(1)
-        (-1)(-1)
-        (-1)(-1);
-
-    svd_unordered(A);
-
-    //sen::Mat<2, 3> A = sen::mat_of<2, 3>
-    //    (1)(-1)(1)(-1)
-    //    (-1)(1)(1)(-1);
+    //sen::Mat<4, 2> A = sen::mat_of<4, 2>
+    //    (1)(-1)
+    //    (-1)(1)
+    //    (1)(1)
+    //    (-1)(-1);
 
     //svd_unordered(A);
 
+    sen::Mat<2, 4> A = sen::mat_of<2, 4>
+        (1)(-1)(1)(-1)
+        (-1)(1)(1)(-1);
+
+    sen::SVD_underdetermined<2, 4> svd = svd_unordered_underdetermined(A);
+
+    sen::print(svd.U);
+    sen::print(svd.sigma);
+    sen::print(svd.V_transposed);
+    auto comp = svd.U * svd.sigma * svd.V_transposed;
+    print(comp);
     //int N = 3;
     //CYCLIC_BY_ROW(N, index_b0, index_b1)
     //{
