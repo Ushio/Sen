@@ -336,13 +336,20 @@ TEST_CASE("cyclic by row", "")
     }
 }
 TEST_CASE("SVD", "") {
-    sen::Mat<3, 2> A = sen::mat_of<3, 2>
+    sen::Mat<5, 2> A = sen::mat_of<5, 2>
         (1)(-1)
         (-1)(1)
-        (1)(1);
-
+        (1)(1)
+        (-1)(-1)
+        (-1)(-1);
 
     svd_unordered(A);
+
+    //sen::Mat<2, 3> A = sen::mat_of<2, 3>
+    //    (1)(-1)(1)(-1)
+    //    (-1)(1)(1)(-1);
+
+    //svd_unordered(A);
 
     //int N = 3;
     //CYCLIC_BY_ROW(N, index_b0, index_b1)

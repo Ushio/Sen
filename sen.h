@@ -461,13 +461,18 @@ namespace sen
     for (int a = 0; a < (n); a++) \
     for (int b = a + 1; b < (n); b++)
 
-    void svd_unordered(const Mat<3, 2>& A)
+    // Economy SVD
+    template <int rows, int cols>
+    struct SVD
     {
-        enum {
-            rows = 3,
-            cols = 2
-        };
+        Mat<rows, cols> U;
+        Mat<cols, cols> sigma;
+        Mat<cols, cols> V_transposed;
+    };
 
+    template <int rows, int cols>
+    SVD<rows, cols> svd_unordered(const Mat<rows, cols>& A)
+    {
         Mat<rows, cols> B = A;
 
         float convergence_previous = FLT_MAX;
@@ -515,20 +520,21 @@ namespace sen
             break;
         }
 
-        // B = UA
-        Mat<cols, cols> sigma;
-        sigma.set_zero();
+        SVD<rows, cols> svd;
 
-        auto U = B;
+        // B = UA
+        svd.sigma.set_zero();
+
+        svd.U = B;
         for (int i_col = 0; i_col < cols; i_col++)
         {
             auto col = B.col(i_col);
             float sigma_i = v_length(col);
-            sigma(i_col, i_col) = sigma_i;
-            U.set_col(i_col, col / sigma_i); // need zero check?
+            svd.sigma(i_col, i_col) = sigma_i;
+            svd.U.set_col(i_col, col / sigma_i); // need zero check?
         }
 
-        Mat<cols, cols> inv_sigma = sigma;
+        Mat<cols, cols> inv_sigma = svd.sigma;
         for (int i = 0; i < inv_sigma.size(); i++)
         {
             if (inv_sigma[i] != 0.0f)
@@ -537,12 +543,14 @@ namespace sen
             }
         }
         
-        Mat<cols, cols> transposeV = inv_sigma * transpose(U) * A;
-        //print(U);
-        //print(sigma);
-        //print(transposeV);
+        svd.V_transposed = inv_sigma * transpose(svd.U) * A;
+        print(svd.U);
+        print(svd.sigma);
+        print(svd.V_transposed);
 
-        //auto comp = U * sigma * transposeV;
-        //print(comp);
+        auto comp = svd.U * svd.sigma * svd.V_transposed;
+        print(comp);
+
+        return svd;
     }
 }
