@@ -1,6 +1,7 @@
 #include "catch_amalgamated.hpp"
 #include "sen.h"
 #include "prp.hpp"
+#include <set>
 
 // for tests. MxN = glm::mat<N, M, float> on GLM
 template <int rows, int cols>
@@ -315,4 +316,39 @@ TEST_CASE("pseudo inverse(overdetermined)", "") {
             REQUIRE(min_cost(0, 0) <= cost(0, 0));
         }
     }
+}
+
+TEST_CASE("cyclic by row", "") 
+{
+    for (int i = 2; i < 10; i++)
+    {
+        int N = i;
+
+        std::set<std::pair<int, int>> xs;
+
+        CYCLIC_BY_ROW(N, a, b)
+        {
+            REQUIRE(a < b);
+            xs.insert({ a, b });
+        }
+
+        REQUIRE(xs.size() == N * (N - 1) / 2);
+    }
+}
+TEST_CASE("SVD", "") {
+    sen::Mat<3, 2> A = sen::mat_of<3, 2>
+        (1)(-1)
+        (-1)(1)
+        (1)(1);
+
+
+    svd_unordered(A);
+
+    //int N = 3;
+    //CYCLIC_BY_ROW(N, index_b0, index_b1)
+    //{
+    //    printf("%d-%d\n", index_b0, index_b1);
+    //}
+
+
 }

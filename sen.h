@@ -12,6 +12,18 @@ namespace sen
     template<class T, class F>
     struct cond<false, T, F> { using type = F; };
 
+    template <class T>
+    inline T ss_max(T x, T y)
+    {
+        return (x < y) ? y : x;
+    }
+
+    template <class T>
+    inline T ss_min(T x, T y)
+    {
+        return (y < x) ? y : x;
+    }
+
     template <int numberOfRows, int numberOfCols>
     struct Storage
     {
@@ -329,23 +341,33 @@ namespace sen
         return r;
     }
 
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator-(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols, class T>
+    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type element_wise_op_binary(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs, T f)
     {
         static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_rows == rhs_rows, "invalid substruct");
         static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_cols, "invalid substruct");
-       
+
         typename ConservativelyDynamic<lhs_rows, rhs_cols>::type r;
 
         r.allocate(lhs.rows(), lhs.cols());
 
-        for (int dst_row = 0; dst_row < r.rows(); dst_row++)
-        for (int dst_col = 0; dst_col < r.cols(); dst_col++)
+        for (int i = 0; i < lhs.size(); i++)
         {
-            r(dst_row, dst_col) = lhs(dst_row, dst_col) - rhs(dst_row, dst_col);
+            r[i] = f(lhs[i], rhs[i]);
         }
 
         return r;
+    }
+
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator-(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    {
+        return element_wise_op_binary(lhs, rhs, [](float a, float b) { return a - b; });
+    }
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator+(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    {
+        return element_wise_op_binary(lhs, rhs, [](float a, float b) { return a + b; });
     }
 
     // Mat vs scaler
@@ -422,4 +444,105 @@ namespace sen
         return r / det(A);
     }
 
+    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
+    float v_dot(const Mat<lhs_rows, lhs_cols>& a, const Mat<rhs_rows, rhs_cols>& b)
+    {
+        return ( transpose(a) * b )( 0, 0 );
+    }
+
+    template <int rows, int cols>
+    float v_length(const Mat<rows, cols>& a)
+    {
+        return sqrtf(v_dot(a, a));
+    }
+
+    // all combinations of 0 to n - 1
+#define CYCLIC_BY_ROW(n, a, b) \
+    for (int a = 0; a < (n); a++) \
+    for (int b = a + 1; b < (n); b++)
+
+    void svd_unordered(const Mat<3, 2>& A)
+    {
+        enum {
+            rows = 3,
+            cols = 2
+        };
+
+        Mat<rows, cols> B = A;
+
+        float convergence_previous = FLT_MAX;
+        for (;;)
+        {
+            float convergence = 0.0f;
+
+            CYCLIC_BY_ROW(cols, index_b1, index_b2)
+            {
+                Mat<rows, 1> b1 = B.col(index_b1);
+                Mat<rows, 1> b2 = B.col(index_b2);
+
+                float Py = 2.0f * v_dot(b1, b2);
+                float Px = v_dot(b1, b1) - v_dot(b2, b2);
+                float PL = sqrtf(Px * Px + Py * Py);
+
+                convergence = ss_max(convergence, fabs(Py));
+
+                if (PL == 0.0f || Py == 0.0f )
+                {
+                    continue; // no rotation
+                }
+
+                float sgn = 0.0f < Px ? 1.0f : -1.0f;
+                float Hx = PL + Px * sgn;
+                float Hy = Py * sgn;
+                float L = sqrtf(Hx * Hx + Hy * Hy);
+                float c = Hx / L;
+                float s = Hy / L;
+
+                // Equivalent to:
+                //float two_theta = atan(Py / Px);
+                //float s = sin(two_theta * 0.5f);
+                //float c = cos(two_theta * 0.5f);
+
+                B.set_col(index_b1, +c * b1 + s * b2);
+                B.set_col(index_b2, -s * b1 + c * b2);
+            }
+
+            if (convergence < convergence_previous && convergence != 0.0f)
+            {
+                convergence_previous = convergence;
+                continue;
+            }
+            break;
+        }
+
+        // B = UA
+        Mat<cols, cols> sigma;
+        sigma.set_zero();
+
+        auto U = B;
+        for (int i_col = 0; i_col < cols; i_col++)
+        {
+            auto col = B.col(i_col);
+            float sigma_i = v_length(col);
+            sigma(i_col, i_col) = sigma_i;
+            U.set_col(i_col, col / sigma_i); // need zero check?
+        }
+
+        Mat<cols, cols> inv_sigma = sigma;
+        for (int i = 0; i < inv_sigma.size(); i++)
+        {
+            if (inv_sigma[i] != 0.0f)
+            {
+                inv_sigma[i] = 1.0f / inv_sigma[i];
+            }
+        }
+        
+        Mat<cols, cols> transposeV = inv_sigma * transpose(U) * A;
+        //print(U);
+        //print(sigma);
+        //print(transposeV);
+
+        //auto comp = U * sigma * transposeV;
+        //print(comp);
+    }
 }

@@ -122,24 +122,37 @@ int main() {
         }
 
         // linear regression  
-        sen::Mat<2, 2> A;
-        sen::Mat<2, 1> V;
-        A.set_zero();
-        V.set_zero();
+        //sen::Mat<2, 2> A;
+        //sen::Mat<2, 1> V;
+        //A.set_zero();
+        //V.set_zero();
+        //for (int i = 0; i < xs.size(); i++)
+        //{
+        //    float x = xs[i];
+        //    float y = ys[i];
+        //    A(0, 0) += x * x;
+        //    A(0, 1) += x;
+        //    A(1, 0) += x;
+        //    A(1, 1) += 1.0f;
+
+        //    V(0, 0) += x * y;
+        //    V(1, 0) += y;
+        //}
+
+        //sen::Mat<2, 1> ab = sen::inverse(A) * V;
+
+        sen::Mat<6, 2> A;
+        sen::Mat<6, 1> b;
+        A.allocate(xs.size(), 2);
         for (int i = 0; i < xs.size(); i++)
         {
-            float x = xs[i];
-            float y = ys[i];
-            A(0, 0) += x * x;
-            A(0, 1) += x;
-            A(1, 0) += x;
-            A(1, 1) += 1.0f;
-
-            V(0, 0) += x * y;
-            V(1, 0) += y;
+            A(i, 0) = xs[i];
+            A(i, 1) = 1.0f;
+            b(i, 0) = ys[i];
         }
+        sen::Mat<2, 6> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
+        sen::Mat<2, 1> ab = pinvA * b;
 
-        sen::Mat<2, 1> ab = sen::inverse(A) * V;
         auto f = [ab](float x) { return ab(0, 0) * x + ab(1, 0); };
         DrawLine({ 0.0f, f(0.0f), 0.0f }, { 10.0f, f(10.0f), 0.0f }, { 255,255,0 }, 2);
         
