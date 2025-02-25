@@ -507,22 +507,12 @@ namespace sen
         // B = UA
         svd.sigma.set_zero();
 
-        svd.U = B;
         for (int i_col = 0; i_col < cols; i_col++)
         {
             auto col = B.col(i_col);
             float sigma_i = v_length(col);
             svd.sigma(i_col, i_col) = sigma_i;
             svd.U.set_col(i_col, col / sigma_i); // need zero check?
-        }
-
-        Mat<cols, cols> inv_sigma = svd.sigma;
-        for (int i = 0; i < inv_sigma.size(); i++)
-        {
-            if (inv_sigma[i] != 0.0f)
-            {
-                inv_sigma[i] = 1.0f / inv_sigma[i];
-            }
         }
         
         svd.V_transposed = transpose(V);
