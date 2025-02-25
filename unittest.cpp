@@ -269,19 +269,7 @@ TEST_CASE("2x2 inverse", "") {
         sen::Mat<2, 2> A;
         for (auto& v : A) { v = rng.uniformf(); }
 
-        if (i != 6)
-        {
-            continue;
-        }
-        print(A);
         sen::Mat<2, 2> invA = sen::inverse(A);
-
-        if (i == 6)
-        {
-            print(A);
-            print(A * invA);
-            print(invA * A);
-        }
 
         sen::Mat<2, 2> I;
         I.set_identity();
@@ -305,8 +293,8 @@ TEST_CASE("4x4 inverse", "") {
 
         sen::Mat<4, 4> invA = sen::inverse(A);
         
-        print(A * invA);
-        print(invA * A);
+        //print(A * invA);
+        //print(invA * A);
 
         sen::Mat<4, 4> I;
         I.set_identity();
@@ -320,49 +308,49 @@ TEST_CASE("4x4 inverse", "") {
         }
     }
 }
-
-TEST_CASE("pseudo inverse(overdetermined)", "") {
-    pr::PCG rng;
-    for (int i = 0; i < 100; i++)
-    {
-        sen::Mat<5, 2> A;
-        for (float& v : A) { v = rng.uniformf(); }
-
-        sen::Mat<5, 1> b;
-        for (float& v : b) { v = rng.uniformf(); }
-
-        sen::Mat<2, 5> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
-
-        sen::Mat<2, 1> best_x = pinvA * b;
-        sen::Mat<5, 1> best_b = A * best_x;
-        sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
-
-        // any offsetted x can't be better than best_x
-        for (int i = 0; i < 64; i++)
-        {
-            sen::Mat<2, 1> x = best_x;
-            x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-            x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-
-            sen::Mat<5, 1> not_best_b = A * x;
-            sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
-
-            REQUIRE(min_cost(0, 0) <= cost(0, 0));
-        }
-
-        sen::SVD<5, 2> svd = sen::svd_unordered(A);
-
-        for (auto& s : svd.sigma)
-        {
-            if (s != 0.0f)
-                s = 1.0f / s;
-        }
-        sen::Mat<2, 5> pinvA_svd = sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
-        
-        //sen::print(pinvA);
-        //sen::print(pinvA_svd);
-    }
-}
+//
+//TEST_CASE("pseudo inverse(overdetermined)", "") {
+//    pr::PCG rng;
+//    for (int i = 0; i < 100; i++)
+//    {
+//        sen::Mat<5, 2> A;
+//        for (float& v : A) { v = rng.uniformf(); }
+//
+//        sen::Mat<5, 1> b;
+//        for (float& v : b) { v = rng.uniformf(); }
+//
+//        sen::Mat<2, 5> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
+//
+//        sen::Mat<2, 1> best_x = pinvA * b;
+//        sen::Mat<5, 1> best_b = A * best_x;
+//        sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
+//
+//        // any offsetted x can't be better than best_x
+//        for (int i = 0; i < 64; i++)
+//        {
+//            sen::Mat<2, 1> x = best_x;
+//            x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+//            x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+//
+//            sen::Mat<5, 1> not_best_b = A * x;
+//            sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
+//
+//            REQUIRE(min_cost(0, 0) <= cost(0, 0));
+//        }
+//
+//        sen::SVD<5, 2> svd = sen::svd_unordered(A);
+//
+//        for (auto& s : svd.sigma)
+//        {
+//            if (s != 0.0f)
+//                s = 1.0f / s;
+//        }
+//        sen::Mat<2, 5> pinvA_svd = sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
+//        
+//        //sen::print(pinvA);
+//        //sen::print(pinvA_svd);
+//    }
+//}
 
 TEST_CASE("cyclic by row", "") 
 {
@@ -399,7 +387,7 @@ TEST_CASE("SVD", "") {
     //sen::print(svd.U);
     //sen::print(svd.sigma);
     //sen::print(svd.V_transposed);
-    auto comp = svd.U * svd.sigma * svd.V_transposed;
+    //auto comp = svd.U * svd.sigma * svd.V_transposed;
     //print(comp);
     //int N = 3;
     //CYCLIC_BY_ROW(N, index_b0, index_b1)

@@ -449,7 +449,7 @@ namespace sen
         static_assert(cols <= rows, "use svd_underdetermined_unordered()");
 
         Mat<rows, cols> B = A;
-        Mat<rows, cols> V;
+        Mat<cols, cols> V;
         V.set_identity();
 
         float convergence_previous = FLT_MAX;
