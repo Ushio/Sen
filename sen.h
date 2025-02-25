@@ -449,6 +449,8 @@ namespace sen
         static_assert(cols <= rows, "use svd_underdetermined_unordered()");
 
         Mat<rows, cols> B = A;
+        Mat<rows, cols> V;
+        V.set_identity();
 
         float convergence_previous = FLT_MAX;
         for (;;)
@@ -485,6 +487,11 @@ namespace sen
 
                 B.set_col(index_b1, +c * b1 + s * b2);
                 B.set_col(index_b2, -s * b1 + c * b2);
+
+                auto b1_v = V.col(index_b1);
+                auto b2_v = V.col(index_b2);
+                V.set_col(index_b1, +c * b1_v + s * b2_v);
+                V.set_col(index_b2, -s * b1_v + c * b2_v);
             }
 
             if (convergence < convergence_previous && convergence != 0.0f)
@@ -518,13 +525,7 @@ namespace sen
             }
         }
         
-        svd.V_transposed = inv_sigma * transpose(svd.U) * A;
-
-        //for (int i_row = 0; i_row < svd.V_transposed.rows(); i_row++)
-        //{
-        //    auto c = svd.V_transposed.row(i_row);
-        //    svd.V_transposed.set_row(i_row, c / v_length(transpose(c))); // need zero check?
-        //}
+        svd.V_transposed = transpose(V);
 
         return svd;
     }

@@ -267,12 +267,21 @@ TEST_CASE("2x2 inverse", "") {
     for (int i = 0; i < 100; i++)
     {
         sen::Mat<2, 2> A;
-        for (float& v : A) { v = rng.uniformf(); }
+        for (auto& v : A) { v = rng.uniformf(); }
 
+        if (i != 6)
+        {
+            continue;
+        }
+        print(A);
         sen::Mat<2, 2> invA = sen::inverse(A);
 
-        //print(A * invA);
-        //print(invA * A);
+        if (i == 6)
+        {
+            print(A);
+            print(A * invA);
+            print(invA * A);
+        }
 
         sen::Mat<2, 2> I;
         I.set_identity();
@@ -291,34 +300,22 @@ TEST_CASE("4x4 inverse", "") {
     pr::PCG rng;
     for (int i = 0; i < 100; i++)
     {
-        sen::Mat<3, 3> A;
-        for (float& v : A) { v = rng.uniformf(); }
+        sen::Mat<4, 4> A;
+        for (auto& v : A) { v = rng.uniformf(); }
 
-        //if (i == 29)
-        //{
-        //    printf("");
-        //}
-        sen::Mat<3, 3> invA = sen::inverse(A);
-        //sen::Mat<3, 3> invA = fromGLM(glm::inverse(toGLM(A)));
-        if (i == 29)
-        {
-            sen::SVD<3, 3> svd = sen::svd_unordered(A);
-            print(sen::transpose(svd.U) * svd.U);
-            print(sen::transpose(svd.V_transposed) * svd.V_transposed);
-        }
-
-        print(A);
+        sen::Mat<4, 4> invA = sen::inverse(A);
+        
         print(A * invA);
         print(invA * A);
 
-        sen::Mat<3, 3> I;
+        sen::Mat<4, 4> I;
         I.set_identity();
 
-        for (float v : I - A * invA) {
+        for (auto v : I - A * invA) {
             REQUIRE(fabs(v) < 1.0e-3f);
         }
 
-        for (float v : I - invA * A) {
+        for (auto v : I - invA * A) {
             REQUIRE(fabs(v) < 1.0e-3f);
         }
     }
