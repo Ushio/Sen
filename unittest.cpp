@@ -275,11 +275,11 @@ TEST_CASE("2x2 inverse", "") {
         I.set_identity();
 
         for (float v : I - A * invA) {
-            REQUIRE(fabs(v) < 1.0e-4f );
+            REQUIRE(fabs(v) < 1.0e-5f );
         }
 
         for (float v : I - invA * A) {
-            REQUIRE(fabs(v) < 1.0e-4f);
+            REQUIRE(fabs(v) < 1.0e-5f);
         }
     }
 }
@@ -300,11 +300,11 @@ TEST_CASE("4x4 inverse", "") {
         I.set_identity();
 
         for (auto v : I - A * invA) {
-            REQUIRE(fabs(v) < 1.0e-3f);
+            REQUIRE(fabs(v) < 1.0e-4f);
         }
 
         for (auto v : I - invA * A) {
-            REQUIRE(fabs(v) < 1.0e-3f);
+            REQUIRE(fabs(v) < 1.0e-4f);
         }
     }
 }
