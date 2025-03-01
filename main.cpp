@@ -141,21 +141,21 @@ int main() {
 
         //sen::Mat<2, 1> ab = sen::inverse(A) * V;
 
-        sen::Mat<6, 2> A;
-        sen::Mat<6, 1> b;
-        A.allocate(xs.size(), 2);
-        for (int i = 0; i < xs.size(); i++)
-        {
-            A(i, 0) = xs[i];
-            A(i, 1) = 1.0f;
-            b(i, 0) = ys[i];
-        }
-        sen::Mat<2, 6> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
-        sen::Mat<2, 1> ab = pinvA * b;
+        //sen::Mat<6, 2> A;
+        //sen::Mat<6, 1> b;
+        //A.allocate(xs.size(), 2);
+        //for (int i = 0; i < xs.size(); i++)
+        //{
+        //    A(i, 0) = xs[i];
+        //    A(i, 1) = 1.0f;
+        //    b(i, 0) = ys[i];
+        //}
+        //sen::Mat<2, 6> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
+        //sen::Mat<2, 1> ab = pinvA * b;
 
-        auto f = [ab](float x) { return ab(0, 0) * x + ab(1, 0); };
-        DrawLine({ 0.0f, f(0.0f), 0.0f }, { 10.0f, f(10.0f), 0.0f }, { 255,255,0 }, 2);
-        
+        //auto f = [ab](float x) { return ab(0, 0) * x + ab(1, 0); };
+        //DrawLine({ 0.0f, f(0.0f), 0.0f }, { 10.0f, f(10.0f), 0.0f }, { 255,255,0 }, 2);
+        //
         PopGraphicState();
         EndCamera();
 

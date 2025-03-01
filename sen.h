@@ -420,7 +420,10 @@ namespace sen
     template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
     float v_dot(const Mat<lhs_rows, lhs_cols>& a, const Mat<rhs_rows, rhs_cols>& b)
     {
-        return ( transpose(a) * b )( 0, 0 );
+        auto r = ( transpose(a) * b );
+        SEN_ASSERT(r.rows() == 1 && "invalid multiplication");
+        SEN_ASSERT(r.cols() == 1 && "invalid multiplication");
+        return r(0, 0);
     }
 
     template <int rows, int cols>
@@ -435,18 +438,44 @@ namespace sen
     for (int b = a + 1; b < (n); b++)
 
     // Economy SVD
+    // A = B x transpose(V)
     template <int rows, int cols>
     struct SVD
     {
-        Mat<rows, cols> U;
-        Mat<cols, cols> sigma;
-        Mat<cols, cols> V_transposed;
+        Mat<cols, cols> V;
+        Mat<rows, cols> B; // B = A x J1 x J2 ... JN, where J is rotation
+
+        float singular(int i) const
+        {
+            return v_length(B.col(i));
+        }
+        Mat<cols, rows> pinv( float tol = 1e-7f ) const
+        {
+            Mat<cols, rows> inv;
+            auto sigma_reg_U_transposed = transpose(B);
+            for (int i = 0; i < sigma_reg_U_transposed.rows(); i++)
+            {
+                auto Br = sigma_reg_U_transposed.row(i);
+                float sigma2 = (Br * transpose(Br))(0, 0);
+
+                if ( sigma2 < tol * tol )
+                {
+                    Br.set_zero();
+                    sigma_reg_U_transposed.set_row(i, Br);
+                }
+                else
+                {
+                    sigma_reg_U_transposed.set_row(i, Br / sigma2);
+                }
+            }
+            return V * sigma_reg_U_transposed;
+        }
     };
 
     template <int rows, int cols>
-    SVD<rows, cols> svd_unordered(const Mat<rows, cols>& A)
+    SVD<rows, cols> svd_BV(const Mat<rows, cols>& A)
     {
-        static_assert(cols <= rows, "use svd_underdetermined_unordered()");
+        //static_assert(cols <= rows, "use svd_underdetermined_unordered()");
 
         Mat<rows, cols> B = A;
         Mat<cols, cols> V;
@@ -503,60 +532,56 @@ namespace sen
         }
 
         SVD<rows, cols> svd;
-
-        // B = UA
-        svd.sigma.set_zero();
-
-        for (int i_col = 0; i_col < cols; i_col++)
-        {
-            auto col = B.col(i_col);
-            float sigma_i = v_length(col);
-            svd.sigma(i_col, i_col) = sigma_i;
-            svd.U.set_col(i_col, col / sigma_i); // need zero check?
-        }
-        
-        svd.V_transposed = transpose(V);
-
+        svd.V = V;
+        svd.B = B;
         return svd;
     }
 
-    template <int rows, int cols>
-    struct SVD_underdetermined
-    {
-        Mat<rows, rows> U;
-        Mat<rows, rows> sigma;
-        Mat<rows, cols> V_transposed;
-    };
+    //template <int rows, int cols>
+    //struct SVD_underdetermined
+    //{
+    //    Mat<rows, rows> U;
+    //    Mat<rows, rows> sigma;
+    //    Mat<rows, cols> V_transposed;
+    //};
 
-    template <int rows, int cols>
-    SVD_underdetermined<rows, cols> svd_unordered_underdetermined(const Mat<rows, cols>& A)
-    {
-        static_assert(rows < cols, "use svd_underdetermined()");
+    //template <int rows, int cols>
+    //SVD_underdetermined<rows, cols> svd_unordered_underdetermined(const Mat<rows, cols>& A)
+    //{
+    //    static_assert(rows < cols, "use svd_underdetermined()");
 
-        SVD<cols, rows> svd_transposed = svd_unordered(transpose(A));
-        return {
-            transpose(svd_transposed.V_transposed),
-            svd_transposed.sigma,
-            transpose(svd_transposed.U)
-        };
-    }
+    //    SVD<cols, rows> svd_transposed = svd_unordered(transpose(A));
+    //    return {
+    //        transpose(svd_transposed.V_transposed),
+    //        svd_transposed.sigma,
+    //        transpose(svd_transposed.U)
+    //    };
+    //}
 
-    template <int dim>
-    Mat<dim, dim> inverse(const Mat<dim, dim>& A)
-    {
-        //static_assert(rows == cols, "must be square");
-        //static_assert(0, "not implemented");
+    //template <int dim>
+    //Mat<dim, dim> inverse(const Mat<dim, dim>& A)
+    //{
+    //    //static_assert(rows == cols, "must be square");
+    //    //static_assert(0, "not implemented");
 
-        SVD<dim, dim> svd = svd_unordered(A);
+    //    SVD<dim, dim> svd = svd_unordered(A);
 
-        // TODO, refactor
-        for (auto& s : svd.sigma)
-        {
-            if (s != 0.0f)
-                s = 1.0f / s;
-        }
-        return sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
-    }
+    //    // TODO, refactor
+    //    float lambda = 0.0001f;
+    //    for (auto& s : svd.sigma)
+    //    {
+    //        //if (FLT_MIN< fabs(s))
+    //        //{
+    //        //    s = 1.0f / s;
+    //        //}
+    //        //else
+    //        //{
+    //        //    s = 0;
+    //        //}
+    //        s = s / (s * s + lambda * lambda);
+    //    }
+    //    return sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
+    //}
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
     {
@@ -569,12 +594,12 @@ namespace sen
         return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
     }
 
-    template <>
-    Mat<2, 2> inverse(const Mat<2, 2>& A)
-    {
-        Mat<2, 2> r = mat_of<2, 2>
-            (A(1, 1))(-A(0, 1))
-            (-A(1, 0))(A(0, 0));
-        return r / det(A);
-    }
+    //template <>
+    //Mat<2, 2> inverse(const Mat<2, 2>& A)
+    //{
+    //    Mat<2, 2> r = mat_of<2, 2>
+    //        (A(1, 1))(-A(0, 1))
+    //        (-A(1, 0))(A(0, 0));
+    //    return r / det(A);
+    //}
 }

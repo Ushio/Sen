@@ -262,26 +262,97 @@ TEST_CASE("identity", "") {
     }
 }
 
-TEST_CASE("2x2 inverse", "") {
+//TEST_CASE("2x2 inverse", "") {
+//    pr::PCG rng;
+//    for (int i = 0; i < 100; i++)
+//    {
+//        sen::Mat<2, 2> A;
+//        for (auto& v : A) { v = rng.uniformf(); }
+//
+//        sen::Mat<2, 2> invA = sen::inverse(A);
+//
+//        sen::Mat<2, 2> I;
+//        I.set_identity();
+//
+//        for (float v : I - A * invA) {
+//            REQUIRE(fabs(v) < 1.0e-5f );
+//        }
+//
+//        for (float v : I - invA * A) {
+//            REQUIRE(fabs(v) < 1.0e-5f);
+//        }
+//    }
+//}
+
+TEST_CASE("badinverse", "") {
     pr::PCG rng;
-    for (int i = 0; i < 100; i++)
+
     {
-        sen::Mat<2, 2> A;
-        for (auto& v : A) { v = rng.uniformf(); }
+        // | Ax - b | -> min answer
+        sen::Mat<2, 2> A = sen::mat_of<2,2>
+            (2)(4)
+            (1)(2);
+        sen::Mat<2, 1> b = sen::mat_of<2, 1>
+            (2)
+            (3);
+        sen::SVD<2, 2> svd = sen::svd_BV(A);
+        auto pInv = svd.pinv();
+        auto best_x = pInv * b;
+        sen::Mat<2, 1> best_b = A * best_x;
+        sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
 
-        sen::Mat<2, 2> invA = sen::inverse(A);
+        for (int i = 0; i < 64; i++)
+        {
+            sen::Mat<2, 1> x = best_x;
+            x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+            x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
 
-        sen::Mat<2, 2> I;
-        I.set_identity();
+            sen::Mat<2, 1> not_best_b = A * x;
+            sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
 
-        for (float v : I - A * invA) {
-            REQUIRE(fabs(v) < 1.0e-5f );
-        }
-
-        for (float v : I - invA * A) {
-            REQUIRE(fabs(v) < 1.0e-5f);
+            // printf("%f\n", cost(0, 0));
+            REQUIRE(min_cost(0, 0) <= cost(0, 0));
         }
     }
+
+    //{
+    //    // | x | -> min answer
+    //    // x1 + 2 * x2 = 1
+
+    //    sen::Mat<2, 2> A = sen::mat_of<2, 2>
+    //        (2)(4)
+    //        (1)(2);
+    //    sen::Mat<2, 1> b = sen::mat_of<2, 1>
+    //        (2)
+    //        (1);
+    //    sen::SVD<2, 2> svd = sen::svd_BV(A);
+    //    auto pInv = svd.pinv();
+    //    auto best_x = pInv * b;
+    //    sen::Mat<2, 1> best_b = A * best_x;
+    //    sen::Mat<1, 1> min_cost = sen::transpose(best_x) * (best_x);
+    //    sen::Mat<1, 1> sq = sen::transpose(best_b - b) * (best_b - b);
+
+    //    REQUIRE(fabs(sq(0, 0)) <= 0.00001f );
+
+    //    for (int i = 0; i < 64; i++)
+    //    {
+    //        // x1 = 1 - 2 * x2
+    //        float x2 = glm::mix(-2.0f, 2.0f, rng.uniformf());
+    //        float x1 = 1.0f - 2.0f * x2;
+    //        sen::Mat<2, 1> x = sen::mat_of<2, 1>
+    //            (x1)
+    //            (x2);
+
+    //        best_b = A * x;
+    //        sen::Mat<1, 1> sq = sen::transpose(best_b - b) * (best_b - b);
+    //        REQUIRE(fabs(sq(0, 0)) <= 0.00001f);
+
+    //        sen::Mat<1, 1> cost = sen::transpose(best_x) * (best_x);
+
+    //        printf("%f\n", cost(0, 0));
+    //        REQUIRE(min_cost(0, 0) <= cost(0, 0));
+    //    }
+    //}
 }
 
 TEST_CASE("4x4 inverse", "") {
@@ -291,7 +362,8 @@ TEST_CASE("4x4 inverse", "") {
         sen::Mat<4, 4> A;
         for (auto& v : A) { v = rng.uniformf(); }
 
-        sen::Mat<4, 4> invA = sen::inverse(A);
+        sen::SVD<4, 4> svd = sen::svd_BV(A);
+        sen::Mat<4, 4> invA = svd.pinv();
         
         //print(A * invA);
         //print(invA * A);
@@ -370,19 +442,52 @@ TEST_CASE("cyclic by row", "")
     }
 }
 TEST_CASE("SVD", "") {
+    sen::Mat<4, 2> A = sen::mat_of<4, 2>
+        (1)(-1)
+        (-1)(1)
+        (1)(1)
+        (-1)(-1);
     //sen::Mat<4, 2> A = sen::mat_of<4, 2>
-    //    (1)(-1)
-    //    (-1)(1)
-    //    (1)(1)
-    //    (-1)(-1);
+    //    (4)(8)
+    //    (1)(2)
+    //    (2)(4)
+    //    (1)(2);
 
-    //svd_unordered(A);
+    sen::SVD<4, 2> svd = sen::svd_BV(A);
+    //sen::print(svd.B);
+    //sen::print(svd.V);
+    //sen::print(svd.B * sen::transpose(svd.V));
 
-    sen::Mat<2, 4> A = sen::mat_of<2, 4>
-        (1)(-1)(1)(-1)
-        (-1)(1)(1)(-1);
+    sen::Mat<2, 4> pinv = svd.pinv();
+    //sen::print(pinv);
 
-    sen::SVD_underdetermined<2, 4> svd = svd_unordered_underdetermined(A);
+    sen::Mat<4, 1> b = sen::mat_of<4, 1>
+        (2)
+        (3)
+        (2)
+        (3);
+    //sen::print(pinv * b);
+
+    //for (int i = 0; i < 2; i++)
+    //{
+    //    printf("sigma %f\n", svd.singular(i));
+    //}
+
+    //sen::Mat<2, 4> A = sen::mat_of<2, 4>
+    //    (1)(-1)(1)(-1)
+    //    (-1)(1)(1)(-1);
+
+    //sen::SVD<2, 4> svd = sen::svd_BV(A);
+    //sen::print(svd.B);
+    //sen::print(svd.V);
+    //sen::print(svd.B * sen::transpose(svd.V));
+
+    //for (int i = 0; i < 4; i++)
+    //{
+    //    printf("sigma %f\n", svd.singular(i));
+    //}
+
+    //sen::SVD_underdetermined<2, 4> svd = svd_unordered_underdetermined(A);
 
     //sen::print(svd.U);
     //sen::print(svd.sigma);
@@ -394,6 +499,5 @@ TEST_CASE("SVD", "") {
     //{
     //    printf("%d-%d\n", index_b0, index_b1);
     //}
-
 
 }
