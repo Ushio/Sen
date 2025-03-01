@@ -216,10 +216,6 @@ namespace sen
                 (*this)(i, i_col) = c(i, 0);
             }
         }
-        void set_col(int i_col, const Mat<numberOfRows, 1>& c)
-        {
-            set_col<numberOfRows, 1>(i_col, c);
-        }
 
         RowType row(int i_row) const 
         {
@@ -241,10 +237,6 @@ namespace sen
             {
                 (*this)(i_row, i) = r(0, i);
             }
-        }
-        void set_row(int i_row, const Mat<1, numberOfCols>& r)
-        {
-            set_row<1, numberOfCols>(i_row, r);
         }
 
         float* begin() { return &m_storage[0]; }
@@ -359,7 +351,7 @@ namespace sen
     Mat<rows, cols> operator*(const Mat<rows, cols>& m, float x)
     {
         Mat<rows, cols> r;
-        r.allocate(m.cols(), m.rows());
+        r.allocate(m.rows(), m.cols());
         for (int i = 0; i < m.size(); i++)
         {
             r[i] = m[i] * x;
@@ -376,7 +368,7 @@ namespace sen
     Mat<rows, cols> operator/(const Mat<rows, cols>& m, float x)
     {
         Mat<rows, cols> r;
-        r.allocate(m.cols(), m.rows());
+        r.allocate(m.rows(), m.cols());
         for (int i = 0; i < m.size(); i++)
         {
             r[i] = m[i] / x;
@@ -455,14 +447,14 @@ namespace sen
             return V * sigma_reg_U_transposed;
         }
     };
+    using SVDDyn = SVD<-1, -1>;
 
     template <int rows, int cols>
     SVD<rows, cols> svd_BV(const Mat<rows, cols>& A)
     {
-        //static_assert(cols <= rows, "use svd_underdetermined_unordered()");
-
         Mat<rows, cols> B = A;
         Mat<cols, cols> V;
+        V.allocate(A.cols(), A.cols());
         V.set_identity();
 
         float convergence_previous = FLT_MAX;
@@ -470,10 +462,11 @@ namespace sen
         {
             float convergence = 0.0f;
 
-            CYCLIC_BY_ROW(cols, index_b1, index_b2)
+            int k = B.cols();
+            CYCLIC_BY_ROW(B.cols(), index_b1, index_b2)
             {
-                Mat<rows, 1> b1 = B.col(index_b1);
-                Mat<rows, 1> b2 = B.col(index_b2);
+                auto b1 = B.col(index_b1);
+                auto b2 = B.col(index_b2);
 
                 float Py = 2.0f * v_dot(b1, b2);
                 float Px = v_dot(b1, b1) - v_dot(b2, b2);
@@ -515,10 +508,7 @@ namespace sen
             break;
         }
 
-        SVD<rows, cols> svd;
-        svd.V = V;
-        svd.B = B;
-        return svd;
+        return { V, B };
     }
 
     //template <int rows, int cols>

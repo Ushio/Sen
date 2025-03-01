@@ -425,53 +425,42 @@ TEST_CASE("cyclic by row", "")
         REQUIRE(xs.size() == N * (N - 1) / 2);
     }
 }
+
 TEST_CASE("SVD", "") {
-    sen::Mat<4, 2> A;
-    A.set(
-        1, -1,
-        -1, 1,
-        1, 1,
-        -1, -1);
 
-    //sen::Mat<4, 2> A = sen::mat_of<4, 2>
-    //    (4)(8)
-    //    (1)(2)
-    //    (2)(4)
-    //    (1)(2);
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<4, 4> A;
+        for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
 
+        sen::SVD<4, 4> svd = sen::svd_BV(A);
+        sen::Mat<4, 4> A_composed = svd.B * sen::transpose(svd.V);
 
-    //sen::print(pinv * b);
+        //sen::print(A);
+        //sen::print(A_composed);
 
-    //for (int i = 0; i < 2; i++)
-    //{
-    //    printf("sigma %f\n", svd.singular(i));
-    //}
+        for (auto v : A - A_composed) {
+            REQUIRE(fabs(v) < 1.0e-5f);
+        }
+    }
 
-    //sen::Mat<2, 4> A = sen::mat_of<2, 4>
-    //    (1)(-1)(1)(-1)
-    //    (-1)(1)(1)(-1);
+    for (int i = 0; i < 100; i++)
+    {
+        int rows = 2 + rng.uniform() % 10;
+        int cols = 2 + rng.uniform() % 10;
+        sen::MatDyn A;
+        A.allocate(rows, cols);
+        for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
 
-    //sen::SVD<2, 4> svd = sen::svd_BV(A);
-    //sen::print(svd.B);
-    //sen::print(svd.V);
-    //sen::print(svd.B * sen::transpose(svd.V));
+        sen::SVDDyn svd = sen::svd_BV(A);
+        sen::MatDyn A_composed = svd.B * sen::transpose(svd.V);
 
-    //for (int i = 0; i < 4; i++)
-    //{
-    //    printf("sigma %f\n", svd.singular(i));
-    //}
+        //sen::print(A);
+        //sen::print(A_composed);
 
-    //sen::SVD_underdetermined<2, 4> svd = svd_unordered_underdetermined(A);
-
-    //sen::print(svd.U);
-    //sen::print(svd.sigma);
-    //sen::print(svd.V_transposed);
-    //auto comp = svd.U * svd.sigma * svd.V_transposed;
-    //print(comp);
-    //int N = 3;
-    //CYCLIC_BY_ROW(N, index_b0, index_b1)
-    //{
-    //    printf("%d-%d\n", index_b0, index_b1);
-    //}
-
+        for (auto v : A - A_composed) {
+            REQUIRE(fabs(v) < 1.0e-5f);
+        }
+    }
 }
