@@ -425,6 +425,10 @@ namespace sen
         {
             return v_length(B.col(i));
         }
+        int nSingulars() const
+        {
+            return B.cols();
+        }
         Mat<cols, rows> pinv( float tol = 1e-7f ) const
         {
             auto sigma_reg_U_transposed = transpose(B);
@@ -461,7 +465,6 @@ namespace sen
         {
             float convergence = 0.0f;
 
-            int k = B.cols();
             CYCLIC_BY_ROW(B.cols(), index_b1, index_b2)
             {
                 auto b1 = B.col(index_b1);
@@ -510,51 +513,6 @@ namespace sen
         return { V, B };
     }
 
-    //template <int rows, int cols>
-    //struct SVD_underdetermined
-    //{
-    //    Mat<rows, rows> U;
-    //    Mat<rows, rows> sigma;
-    //    Mat<rows, cols> V_transposed;
-    //};
-
-    //template <int rows, int cols>
-    //SVD_underdetermined<rows, cols> svd_unordered_underdetermined(const Mat<rows, cols>& A)
-    //{
-    //    static_assert(rows < cols, "use svd_underdetermined()");
-
-    //    SVD<cols, rows> svd_transposed = svd_unordered(transpose(A));
-    //    return {
-    //        transpose(svd_transposed.V_transposed),
-    //        svd_transposed.sigma,
-    //        transpose(svd_transposed.U)
-    //    };
-    //}
-
-    //template <int dim>
-    //Mat<dim, dim> inverse(const Mat<dim, dim>& A)
-    //{
-    //    //static_assert(rows == cols, "must be square");
-    //    //static_assert(0, "not implemented");
-
-    //    SVD<dim, dim> svd = svd_unordered(A);
-
-    //    // TODO, refactor
-    //    float lambda = 0.0001f;
-    //    for (auto& s : svd.sigma)
-    //    {
-    //        //if (FLT_MIN< fabs(s))
-    //        //{
-    //        //    s = 1.0f / s;
-    //        //}
-    //        //else
-    //        //{
-    //        //    s = 0;
-    //        //}
-    //        s = s / (s * s + lambda * lambda);
-    //    }
-    //    return sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
-    //}
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
     {
@@ -566,13 +524,4 @@ namespace sen
     {
         return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
     }
-
-    //template <>
-    //Mat<2, 2> inverse(const Mat<2, 2>& A)
-    //{
-    //    Mat<2, 2> r = mat_of<2, 2>
-    //        (A(1, 1))(-A(0, 1))
-    //        (-A(1, 0))(A(0, 0));
-    //    return r / det(A);
-    //}
 }
