@@ -266,77 +266,25 @@ TEST_CASE("identity", "") {
     }
 }
 
-TEST_CASE("badinverse", "") {
-    pr::PCG rng;
+TEST_CASE("bad mat", "") {
+    // no solution
+    // x1 + x2 = 1
+    // x1 + x2 = 2
+    sen::Mat<2, 2> A;
+    A.set(
+        1, 1,
+        1, 1);
+    sen::Mat<2, 1> b;
+    b.set(
+        1,
+        2);
+    sen::SVD<2, 2> svd = sen::svd_BV(A);
+    auto pInv = svd.pinv();
+    auto best_x = pInv * b;
+    // print(best_x);
 
-    {
-        // | Ax - b | -> min answer
-        sen::Mat<2, 2> A;
-        A.set(
-            2,4,
-            1,2);
-        sen::Mat<2, 1> b;
-        b.set(
-            2, 
-            3);
-        sen::SVD<2, 2> svd = sen::svd_BV(A);
-        auto pInv = svd.pinv();
-        auto best_x = pInv * b;
-        sen::Mat<2, 1> best_b = A * best_x;
-        sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
-
-        for (int i = 0; i < 64; i++)
-        {
-            sen::Mat<2, 1> x = best_x;
-            x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-            x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-
-            sen::Mat<2, 1> not_best_b = A * x;
-            sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
-
-            // printf("%f\n", cost(0, 0));
-            REQUIRE(min_cost(0, 0) <= cost(0, 0));
-        }
-    }
-
-    //{
-    //    // | x | -> min answer
-    //    // x1 + 2 * x2 = 1
-
-    //    sen::Mat<2, 2> A = sen::mat_of<2, 2>
-    //        (2)(4)
-    //        (1)(2);
-    //    sen::Mat<2, 1> b = sen::mat_of<2, 1>
-    //        (2)
-    //        (1);
-    //    sen::SVD<2, 2> svd = sen::svd_BV(A);
-    //    auto pInv = svd.pinv();
-    //    auto best_x = pInv * b;
-    //    sen::Mat<2, 1> best_b = A * best_x;
-    //    sen::Mat<1, 1> min_cost = sen::transpose(best_x) * (best_x);
-    //    sen::Mat<1, 1> sq = sen::transpose(best_b - b) * (best_b - b);
-
-    //    REQUIRE(fabs(sq(0, 0)) <= 0.00001f );
-
-    //    for (int i = 0; i < 64; i++)
-    //    {
-    //        // x1 = 1 - 2 * x2
-    //        float x2 = glm::mix(-2.0f, 2.0f, rng.uniformf());
-    //        float x1 = 1.0f - 2.0f * x2;
-    //        sen::Mat<2, 1> x = sen::mat_of<2, 1>
-    //            (x1)
-    //            (x2);
-
-    //        best_b = A * x;
-    //        sen::Mat<1, 1> sq = sen::transpose(best_b - b) * (best_b - b);
-    //        REQUIRE(fabs(sq(0, 0)) <= 0.00001f);
-
-    //        sen::Mat<1, 1> cost = sen::transpose(best_x) * (best_x);
-
-    //        printf("%f\n", cost(0, 0));
-    //        REQUIRE(min_cost(0, 0) <= cost(0, 0));
-    //    }
-    //}
+    REQUIRE(best_x(0, 0) == 0.75f);
+    REQUIRE(best_x(1, 0) == 0.75f);
 }
 
 TEST_CASE("4x4 inverse", "") {
