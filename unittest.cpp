@@ -364,48 +364,54 @@ TEST_CASE("4x4 inverse", "") {
         }
     }
 }
-//
-TEST_CASE("pseudo inverse(overdetermined)", "") {
+
+TEST_CASE("Multiple Linear Regression", "") {
     pr::PCG rng;
-    for (int i = 0; i < 100; i++)
+
+    // reference function(x) = k + a*x1 + b*x2 + c*x3
+    float k = 12.0f;
+    float a = -0.4f;
+    float b = 2.0f;
+    float c = 0.5f;
+
+    sen::Mat<4, 1> x_ref;
+    x_ref.set(
+        k, 
+        a, 
+        b, 
+        c);
+
+    enum {
+        N_Samples = 512
+    };
+
+    sen::Mat<N_Samples, 4> A;
+    for (int i = 0; i < A.rows(); i++)
     {
-        //sen::Mat<5, 2> A;
-        //for (float& v : A) { v = rng.uniformf(); }
+        A(i, 0) = 1;
 
-        //sen::Mat<5, 1> b;
-        //for (float& v : b) { v = rng.uniformf(); }
-
-        //sen::Mat<2, 5> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
-
-        //sen::Mat<2, 1> best_x = pinvA * b;
-        //sen::Mat<5, 1> best_b = A * best_x;
-        //sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
-
-        //// any offsetted x can't be better than best_x
-        //for (int i = 0; i < 64; i++)
-        //{
-        //    sen::Mat<2, 1> x = best_x;
-        //    x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-        //    x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-
-        //    sen::Mat<5, 1> not_best_b = A * x;
-        //    sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
-
-        //    REQUIRE(min_cost(0, 0) <= cost(0, 0));
-        //}
-
-        //sen::SVD<5, 2> svd = sen::svd_unordered(A);
-
-        //for (auto& s : svd.sigma)
-        //{
-        //    if (s != 0.0f)
-        //        s = 1.0f / s;
-        //}
-        //sen::Mat<2, 5> pinvA_svd = sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
-        
-        //sen::print(pinvA);
-        //sen::print(pinvA_svd);
+        for (int j = 1; j < 4; j++)
+        {
+            A(i, j) = rng.uniformf();
+        }
     }
+
+    sen::Mat<N_Samples, 1> errors;
+    for (auto& v : errors) { v = glm::mix(-0.1f, 0.1f, rng.uniformf()); }
+
+    sen::Mat<N_Samples, 1> measurements = A * x_ref + errors;
+
+    sen::SVD<N_Samples, 4> svd = sen::svd_BV(A);
+    sen::Mat<4, 1> x_resolved = svd.pinv() * measurements;
+
+    // sen::print(x_resolved);
+
+    REQUIRE(fabs(x_resolved(0, 0) - k) < 0.05f);
+    REQUIRE(fabs(x_resolved(1, 0) - a) < 0.05f);
+    REQUIRE(fabs(x_resolved(2, 0) - b) < 0.05f);
+    REQUIRE(fabs(x_resolved(3, 0) - c) < 0.05f);
+
+    REQUIRE(sen::svd_BV(sen::MatDyn(A)).pinv() == svd.pinv()); // dynamic equality check
 }
 
 TEST_CASE("cyclic by row", "") 
