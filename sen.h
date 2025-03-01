@@ -123,14 +123,35 @@ namespace sen
         {
             m_storage.allocate(M, N);
         }
-        void set_zero()
+
+    private:
+        template <class... Tail>
+        void set_resolve(int i, float x, Tail... tail)
+        {
+            this->operator()( i / cols(), i % cols()) = x;
+            set_resolve( i + 1, tail...);
+        }
+        void set_resolve(int i, float x) {
+            this->operator()(i / cols(), i % cols()) = x;
+            SEN_ASSERT(i + 1 == rows() * cols() && "element mismatch");
+        }
+    public:
+        template <class... Args>
+        Mat<numberOfRows, numberOfCols>& set(Args... args)
+        {
+            set_resolve( 0, args...);
+            return *this;
+        }
+
+        Mat<numberOfRows, numberOfCols>& set_zero()
         {
             for (int i = 0; i < size(); i++)
             {
                 m_storage[i] = 0.0f;
             }
+            return *this;
         }
-        void set_identity()
+        Mat<numberOfRows, numberOfCols>& set_identity()
         {
             SEN_ASSERT(rows() == cols() && "dim mismatch");
 
@@ -139,7 +160,9 @@ namespace sen
             {
                 (*this)(i_row, i_col) = i_row == i_col ? 1.0f : 0.0f;
             }
+            return *this;
         }
+
 
         int rows() const { return m_storage.rows(); }
         int cols() const { return m_storage.cols(); }
@@ -231,45 +254,6 @@ namespace sen
 
         Storage<numberOfRows, numberOfCols> m_storage;
     };
-
-    template <int numberOfRows, int numberOfCols>
-    struct RowMajorInitializer {
-        float xs[numberOfRows * numberOfCols];
-        int index;
-        RowMajorInitializer() :index(0)
-        {
-        }
-        RowMajorInitializer& operator()(float value) {
-            SEN_ASSERT(index < numberOfRows * numberOfCols && "out of bounds");
-            xs[index++] = value;
-            return *this;
-        }
-        operator Mat<numberOfRows, numberOfCols>() const {
-            SEN_ASSERT(index == numberOfRows * numberOfCols && "initialize failure");
-
-            Mat<numberOfRows, numberOfCols> m;
-            for (int i_col = 0; i_col < m.cols(); i_col++)
-            for (int i_row = 0; i_row < m.rows(); i_row++)
-            {
-                m(i_row, i_col) = xs[i_row * numberOfCols + i_col];
-            }
-            return m;
-        }
-
-        operator Mat<-1, -1>() const {
-            SEN_ASSERT(index == numberOfRows * numberOfCols && "initialize failure");
-            return this->operator sen::Mat<numberOfRows, numberOfCols>();
-        }
-    };
-
-    template <int numberOfRows, int numberOfCols>
-    RowMajorInitializer<numberOfRows, numberOfCols> mat_of(float v)
-    {
-        static_assert(0 <= numberOfRows, "");
-        static_assert(0 <= numberOfCols, "");
-        RowMajorInitializer<numberOfRows, numberOfCols> initializer;
-        return initializer(v);
-    }
 
     using MatDyn = Mat<-1, -1>;
 

@@ -29,31 +29,37 @@ sen::Mat<rows, cols> fromGLM(const glm::mat<cols, rows, float>& m)
 }
 
 TEST_CASE("Index", "") {
-    sen::Mat<3, 4> A = sen::mat_of<3, 4>
-        (1  )(2  )(3  )(4  )
-        (11 )(22 )(33 )(44 )
-        (111)(222)(333)(444);
+    sen::Mat<3, 4> A;
+    A.set(
+        1,   2,   3,   4,
+        11,  22,  33,  44,
+        111, 222, 333, 444
+    );
 
     REQUIRE(A(0, 1) == 2);
     REQUIRE(A(2, 3) == 444);
 }
 
 TEST_CASE("Col") {
-    sen::Mat<3, 4> A = sen::mat_of<3, 4>
-        (1)(2)(3)(4)
-        (11)(22)(33)(44)
-        (111)(222)(333)(444);
+    sen::Mat<3, 4> A;
+    A.set(
+        1,   2,   3,   4,
+        11,  22,  33,  44,
+        111, 222, 333, 444
+    );
 
     //sen::print(A.col(2));
     //sen::print(sen::MatDyn(A).col(2));
     REQUIRE(A.col(2) == sen::MatDyn(A).col(2));
+    
+    A.set_col(2, sen::Mat<3, 1>().set(1, 1, 1));
 
-    A.set_col(2, sen::mat_of<3, 1>(1)(1)(1));
-
-    sen::Mat<3, 4> ref_c = sen::mat_of<3, 4>
-        (1)(2)(1)(4)
-        (11)(22)(1)(44)
-        (111)(222)(1)(444);
+    sen::Mat<3, 4> ref_c;
+    ref_c.set(
+        1,   2,   1, 4,
+        11,  22,  1, 44,
+        111, 222, 1, 444
+    );
 
     REQUIRE(A == ref_c);
 
@@ -61,20 +67,22 @@ TEST_CASE("Col") {
     //sen::print(sen::MatDyn(A).row(2));
     REQUIRE(A.row(2) == sen::MatDyn(A).row(2));
 
-    A.set_row(1, sen::mat_of<1, 4>(1)(1)(1)(1));
+    A.set_row(1, sen::Mat<1, 4>().set(1,1,1,1));
 
-    sen::Mat<3, 4> ref_r = sen::mat_of<3, 4>
-        (1)(2)(1)(4)
-        (1)(1)(1)(1)
-        (111)(222)(1)(444);
+    sen::Mat<3, 4> ref_r;
+    ref_r.set(
+        1,   2,   1, 4,
+        1,   1,   1, 1,
+        111, 222, 1, 444);
 
     REQUIRE(A == ref_r);
 }
 
 TEST_CASE("Copy", "") {
-    sen::Mat<2, 3> A = sen::mat_of<2, 3>
-        (1)(2)(3)
-        (11)(22)(33);
+    sen::Mat<2, 3> A;
+    A.set(
+        1, 2, 3,
+        11, 22, 33);
 
     sen::MatDyn B;
     sen::Mat<2, 3> C;
@@ -85,10 +93,6 @@ TEST_CASE("Copy", "") {
     for (float v : A - C) {
         REQUIRE(v == 0.0f);
     }
-
-    sen::MatDyn D = sen::mat_of<2, 3>
-        (1)(2)(3)
-        (11)(22)(33);
 }
 
 TEST_CASE("Sub") {
@@ -262,39 +266,19 @@ TEST_CASE("identity", "") {
     }
 }
 
-//TEST_CASE("2x2 inverse", "") {
-//    pr::PCG rng;
-//    for (int i = 0; i < 100; i++)
-//    {
-//        sen::Mat<2, 2> A;
-//        for (auto& v : A) { v = rng.uniformf(); }
-//
-//        sen::Mat<2, 2> invA = sen::inverse(A);
-//
-//        sen::Mat<2, 2> I;
-//        I.set_identity();
-//
-//        for (float v : I - A * invA) {
-//            REQUIRE(fabs(v) < 1.0e-5f );
-//        }
-//
-//        for (float v : I - invA * A) {
-//            REQUIRE(fabs(v) < 1.0e-5f);
-//        }
-//    }
-//}
-
 TEST_CASE("badinverse", "") {
     pr::PCG rng;
 
     {
         // | Ax - b | -> min answer
-        sen::Mat<2, 2> A = sen::mat_of<2,2>
-            (2)(4)
-            (1)(2);
-        sen::Mat<2, 1> b = sen::mat_of<2, 1>
-            (2)
-            (3);
+        sen::Mat<2, 2> A;
+        A.set(
+            2,4,
+            1,2);
+        sen::Mat<2, 1> b;
+        b.set(
+            2, 
+            3);
         sen::SVD<2, 2> svd = sen::svd_BV(A);
         auto pInv = svd.pinv();
         auto best_x = pInv * b;
@@ -381,48 +365,48 @@ TEST_CASE("4x4 inverse", "") {
     }
 }
 //
-//TEST_CASE("pseudo inverse(overdetermined)", "") {
-//    pr::PCG rng;
-//    for (int i = 0; i < 100; i++)
-//    {
-//        sen::Mat<5, 2> A;
-//        for (float& v : A) { v = rng.uniformf(); }
-//
-//        sen::Mat<5, 1> b;
-//        for (float& v : b) { v = rng.uniformf(); }
-//
-//        sen::Mat<2, 5> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
-//
-//        sen::Mat<2, 1> best_x = pinvA * b;
-//        sen::Mat<5, 1> best_b = A * best_x;
-//        sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
-//
-//        // any offsetted x can't be better than best_x
-//        for (int i = 0; i < 64; i++)
-//        {
-//            sen::Mat<2, 1> x = best_x;
-//            x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-//            x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
-//
-//            sen::Mat<5, 1> not_best_b = A * x;
-//            sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
-//
-//            REQUIRE(min_cost(0, 0) <= cost(0, 0));
-//        }
-//
-//        sen::SVD<5, 2> svd = sen::svd_unordered(A);
-//
-//        for (auto& s : svd.sigma)
-//        {
-//            if (s != 0.0f)
-//                s = 1.0f / s;
-//        }
-//        sen::Mat<2, 5> pinvA_svd = sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
-//        
-//        //sen::print(pinvA);
-//        //sen::print(pinvA_svd);
-//    }
-//}
+TEST_CASE("pseudo inverse(overdetermined)", "") {
+    pr::PCG rng;
+    for (int i = 0; i < 100; i++)
+    {
+        //sen::Mat<5, 2> A;
+        //for (float& v : A) { v = rng.uniformf(); }
+
+        //sen::Mat<5, 1> b;
+        //for (float& v : b) { v = rng.uniformf(); }
+
+        //sen::Mat<2, 5> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
+
+        //sen::Mat<2, 1> best_x = pinvA * b;
+        //sen::Mat<5, 1> best_b = A * best_x;
+        //sen::Mat<1, 1> min_cost = sen::transpose(best_b - b) * (best_b - b);
+
+        //// any offsetted x can't be better than best_x
+        //for (int i = 0; i < 64; i++)
+        //{
+        //    sen::Mat<2, 1> x = best_x;
+        //    x(0, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+        //    x(1, 0) += glm::mix(-0.05f, 0.05f, rng.uniformf());
+
+        //    sen::Mat<5, 1> not_best_b = A * x;
+        //    sen::Mat<1, 1> cost = sen::transpose(not_best_b - b) * (not_best_b - b);
+
+        //    REQUIRE(min_cost(0, 0) <= cost(0, 0));
+        //}
+
+        //sen::SVD<5, 2> svd = sen::svd_unordered(A);
+
+        //for (auto& s : svd.sigma)
+        //{
+        //    if (s != 0.0f)
+        //        s = 1.0f / s;
+        //}
+        //sen::Mat<2, 5> pinvA_svd = sen::transpose(svd.V_transposed) * svd.sigma * sen::transpose(svd.U);
+        
+        //sen::print(pinvA);
+        //sen::print(pinvA_svd);
+    }
+}
 
 TEST_CASE("cyclic by row", "") 
 {
@@ -442,30 +426,20 @@ TEST_CASE("cyclic by row", "")
     }
 }
 TEST_CASE("SVD", "") {
-    sen::Mat<4, 2> A = sen::mat_of<4, 2>
-        (1)(-1)
-        (-1)(1)
-        (1)(1)
-        (-1)(-1);
+    sen::Mat<4, 2> A;
+    A.set(
+        1, -1,
+        -1, 1,
+        1, 1,
+        -1, -1);
+
     //sen::Mat<4, 2> A = sen::mat_of<4, 2>
     //    (4)(8)
     //    (1)(2)
     //    (2)(4)
     //    (1)(2);
 
-    sen::SVD<4, 2> svd = sen::svd_BV(A);
-    //sen::print(svd.B);
-    //sen::print(svd.V);
-    //sen::print(svd.B * sen::transpose(svd.V));
 
-    sen::Mat<2, 4> pinv = svd.pinv();
-    //sen::print(pinv);
-
-    sen::Mat<4, 1> b = sen::mat_of<4, 1>
-        (2)
-        (3)
-        (2)
-        (3);
     //sen::print(pinv * b);
 
     //for (int i = 0; i < 2; i++)
