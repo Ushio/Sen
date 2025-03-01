@@ -427,7 +427,6 @@ namespace sen
         }
         Mat<cols, rows> pinv( float tol = 1e-7f ) const
         {
-            Mat<cols, rows> inv;
             auto sigma_reg_U_transposed = transpose(B);
             for (int i = 0; i < sigma_reg_U_transposed.rows(); i++)
             {
