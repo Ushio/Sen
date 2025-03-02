@@ -92,7 +92,7 @@ int main() {
     Initialize(config);
 
     Camera3D camera;
-    camera.origin = { 0, 0, 8 };
+    camera.origin = { 0, 0, 18 };
     camera.lookat = { 0, 0, 0 };
     camera.zUp = false;
 
@@ -112,50 +112,90 @@ int main() {
         DrawGrid(GridAxis::XY, 1.0f, 10, { 128, 128, 128 });
         DrawXYZAxis(1.0f);
 
-        std::vector<float> xs = { 1, 2, 3, 4, 5.06f, 6.0f };
-        std::vector<float> ys = { 1, 3, 2, 6, 7.23, 7 };
+        static std::vector<glm::vec2> points = {
+            {0, 0},
+            {1.5, 1.0},
+            {2, 3},
+            {4, 3.5},
+            {6, 5.5},
+            {7, 6},
+        };
 
-        for (int i = 0; i < xs.size(); i++)
+        PCG colorRng;
+        for (int i = 0; i < points.size() - 1; i++)
         {
-            glm::vec3 p = { xs[i], ys[i], 0.0f };
-            DrawCircle(p, { 0, 0, 1 }, { 255,0,0 }, 0.06f);
+            glm::vec2 from = points[i];
+            glm::vec2 to   = points[i + 1];
+
+            DrawArrow({ from.x, from.y, 0 }, { to.x, to.y, 0 }, 0.02f, 
+                { 255 * colorRng.uniformf(),255 * colorRng.uniformf(),255 * colorRng.uniformf() });
         }
 
-        // linear regression  
-        //sen::Mat<2, 2> A;
-        //sen::Mat<2, 1> V;
-        //A.set_zero();
-        //V.set_zero();
-        //for (int i = 0; i < xs.size(); i++)
-        //{
-        //    float x = xs[i];
-        //    float y = ys[i];
-        //    A(0, 0) += x * x;
-        //    A(0, 1) += x;
-        //    A(1, 0) += x;
-        //    A(1, 1) += 1.0f;
+        static glm::vec3 ik_terminator = { 7, 6, 0 };
+        ManipulatePosition(camera, &ik_terminator, 0.4f);
+        ik_terminator.z = 0;
 
-        //    V(0, 0) += x * y;
-        //    V(1, 0) += y;
-        //}
+        const int N_Joint = points.size() - 1;
 
-        //sen::Mat<2, 1> ab = sen::inverse(A) * V;
+        for (int itr = 0; itr < 4; itr++)
+        {
+            glm::vec2 tip = points[points.size() - 1];
 
-        //sen::Mat<6, 2> A;
-        //sen::Mat<6, 1> b;
-        //A.allocate(xs.size(), 2);
-        //for (int i = 0; i < xs.size(); i++)
-        //{
-        //    A(i, 0) = xs[i];
-        //    A(i, 1) = 1.0f;
-        //    b(i, 0) = ys[i];
-        //}
-        //sen::Mat<2, 6> pinvA = sen::inverse(sen::transpose(A) * A) * sen::transpose(A);
-        //sen::Mat<2, 1> ab = pinvA * b;
+            sen::MatDyn A;
+            A.allocate(2, N_Joint * 2);
 
-        //auto f = [ab](float x) { return ab(0, 0) * x + ab(1, 0); };
-        //DrawLine({ 0.0f, f(0.0f), 0.0f }, { 10.0f, f(10.0f), 0.0f }, { 255,255,0 }, 2);
-        //
+            for (int j = 0; j < N_Joint; j++)
+            {
+                glm::vec2 X = tip - points[j];
+
+                A(0, j * 2 + 0) = X.x; A(0, j * 2 + 1) = -X.y;
+                A(1, j * 2 + 0) = X.y; A(1, j * 2 + 1) = X.x;
+            }
+
+            // sen::print(A);
+
+            glm::vec2 deltaX = glm::vec2(ik_terminator.x, ik_terminator.y) - tip;
+
+            sen::MatDyn pinv = sen::svd_BV(A).pinv();
+            sen::MatDyn delta_cs = pinv* sen::Mat<2, 1>().set(
+                deltaX.x,
+                deltaX.y);
+
+            std::vector<glm::vec2> localDirs(N_Joint);
+            for (int i = 0; i < points.size() - 1; i++)
+            {
+                localDirs[i] = points[i + 1] - points[i];
+            }
+
+            for (int i = 0; i < localDirs.size(); i++)
+            {
+                float delta_c = delta_cs(i * 2,     0);
+                float delta_s = delta_cs(i * 2 + 1, 0);
+
+                glm::mat2 R = {
+                    1.0f + delta_c, delta_s,
+                   -delta_s, 1.0f + delta_c
+                };
+
+                glm::vec2 src_dir = localDirs[i];
+                glm::vec2 new_dir = R * src_dir;
+
+                // preserve length
+                float src_length = glm::length(src_dir);
+                localDirs[i] = glm::normalize(new_dir) * src_length;
+            }
+
+            glm::vec2 new_tip = { 0, 0 };
+            points[0] = new_tip;
+            for (int i = 0; i < points.size() - 1; i++)
+            {
+                new_tip += localDirs[i];
+                points[i + 1] = new_tip;
+            }
+        }
+
+        // sen::print(delta_cs);
+
         PopGraphicState();
         EndCamera();
 
