@@ -117,8 +117,6 @@ int main() {
             {1.5, 1.0},
             {2, 3},
             {4, 3.5},
-            {6, 5.5},
-            {7, 6},
         };
 
         PCG colorRng;
@@ -131,16 +129,24 @@ int main() {
                 { 255 * colorRng.uniformf(),255 * colorRng.uniformf(),255 * colorRng.uniformf() });
         }
 
-        static glm::vec3 ik_terminator = { 7, 6, 0 };
+        static glm::vec3 ik_terminator = { 4, 3.5, 0 };
         ManipulatePosition(camera, &ik_terminator, 0.4f);
         ik_terminator.z = 0;
 
         const int N_Joint = points.size() - 1;
 
-        for (int itr = 0; itr < 4; itr++)
+        glm::vec2 begining = points[points.size() - 1];
+        int N = 1;
+        for (int itr = 0; itr < N; itr++)
         {
             glm::vec2 tip = points[points.size() - 1];
+            glm::vec2 goal =
+                glm::mix(
+                    begining,
+                    glm::vec2(ik_terminator.x, ik_terminator.y),
+                    (float)(itr + 1) / N);
 
+#if 0
             sen::MatDyn A;
             A.allocate(2, N_Joint * 2);
 
@@ -154,7 +160,7 @@ int main() {
 
             // sen::print(A);
 
-            glm::vec2 deltaX = glm::vec2(ik_terminator.x, ik_terminator.y) - tip;
+            glm::vec2 deltaX = goal - tip;
 
             sen::MatDyn pinv = sen::svd_BV(A).pinv();
             sen::MatDyn delta_cs = pinv* sen::Mat<2, 1>().set(
@@ -184,6 +190,53 @@ int main() {
                 float src_length = glm::length(src_dir);
                 localDirs[i] = glm::normalize(new_dir) * src_length;
             }
+#else
+            sen::MatDyn A;
+            A.allocate(2, N_Joint);
+
+            for (int j = 0; j < N_Joint; j++)
+            {
+                glm::vec2 X = tip - points[j];
+
+                float theta = atan2(X.y, X.x);
+
+                A(0, j) = -sin(theta) * X.x - cos(theta) * X.y;
+                A(1, j) = -sin(theta) * X.y + cos(theta) * X.x;
+            }
+
+            glm::vec2 deltaX = goal - tip;
+
+            sen::MatDyn pinv = sen::svd_BV(A).pinv(0.1f);
+            sen::MatDyn delta_thetas = pinv * sen::Mat<2, 1>().set(
+                deltaX.x,
+                deltaX.y);
+
+            // sen::print(delta_theta);
+            std::vector<glm::vec2> localDirs(N_Joint);
+            for (int i = 0; i < points.size() - 1; i++)
+            {
+                localDirs[i] = points[i + 1] - points[i];
+            }
+
+            for (int i = 0; i < localDirs.size(); i++)
+            {
+                float delta_theta = delta_thetas(i, 0);
+
+                float s = sin(delta_theta);
+                float c = cos(delta_theta);
+
+                glm::mat2 R = {
+                    c, s,
+                   -s, c
+                };
+
+                glm::vec2 src_dir = localDirs[i];
+                glm::vec2 new_dir = R * src_dir;
+                localDirs[i] = new_dir;
+            }
+
+            // sen::print(A);
+#endif
 
             glm::vec2 new_tip = { 0, 0 };
             points[0] = new_tip;
