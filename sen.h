@@ -392,19 +392,20 @@ namespace sen
         return r;
     }
 
+    // frobenius inner product
     template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    float v_dot(const Mat<lhs_rows, lhs_cols>& a, const Mat<rhs_rows, rhs_cols>& b)
+    float dot(const Mat<lhs_rows, lhs_cols>& a, const Mat<rhs_rows, rhs_cols>& b)
     {
-        auto r = ( transpose(a) * b );
-        SEN_ASSERT(r.rows() == 1 && "invalid multiplication");
-        SEN_ASSERT(r.cols() == 1 && "invalid multiplication");
-        return r(0, 0);
-    }
+        SEN_ASSERT(a.rows() == b.rows() && "invalid operation");
+        SEN_ASSERT(a.cols() == b.cols() && "invalid operation");
 
-    template <int rows, int cols>
-    float v_length(const Mat<rows, cols>& a)
-    {
-        return sqrtf(v_dot(a, a));
+        float d = 0.0f;
+        for (int i = 0; i < a.size(); i++)
+        {
+            d += a[i] * b[i];
+        }
+
+        return d;
     }
 
     // all combinations of 0 to n - 1
@@ -422,7 +423,8 @@ namespace sen
 
         float singular(int i) const
         {
-            return v_length(B.col(i));
+            auto c = B.col(i);
+            return sqrtf(dot(c, c));
         }
         int nSingulars() const
         {
@@ -469,8 +471,8 @@ namespace sen
                 auto b1 = B.col(index_b1);
                 auto b2 = B.col(index_b2);
 
-                float Py = 2.0f * v_dot(b1, b2);
-                float Px = v_dot(b1, b1) - v_dot(b2, b2);
+                float Py = 2.0f * dot(b1, b2);
+                float Px = dot(b1, b1) - dot(b2, b2);
                 float PL = sqrtf(Px * Px + Py * Py);
 
                 convergence = ss_max(convergence, fabs(Py));
