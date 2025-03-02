@@ -289,7 +289,7 @@ TEST_CASE("bad mat", "") {
 
 TEST_CASE("4x4 inverse", "") {
     pr::PCG rng;
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 10000; i++)
     {
         sen::Mat<4, 4> A;
         for (auto& v : A) { v = rng.uniformf(); }
@@ -297,6 +297,20 @@ TEST_CASE("4x4 inverse", "") {
         sen::SVD<4, 4> svd = sen::svd_BV(A);
         sen::Mat<4, 4> invA = svd.pinv();
         
+        bool regular = true;
+        for (int j = 0; j < svd.nSingulars(); j++)
+        {
+            if (svd.singular(j) < 0.01f)
+            {
+                regular = false;
+            }
+        }
+        if (regular == false)
+        {
+            continue;
+        }
+        sen::Mat<4, 4> A_composed = svd.B * sen::transpose(svd.V);
+
         //print(A * invA);
         //print(invA * A);
 

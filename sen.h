@@ -461,26 +461,37 @@ namespace sen
         V.allocate(A.cols(), A.cols());
         V.set_identity();
 
-        float convergence_previous = FLT_MAX;
-        for (;;)
+        const float tol = 1.e-06f; // a bit larger than machine eps
+
+        bool converged = false;
+        while( !converged )
         {
-            float convergence = 0.0f;
+            converged = true;
 
             CYCLIC_BY_ROW(B.cols(), index_b1, index_b2)
             {
                 auto b1 = B.col(index_b1);
                 auto b2 = B.col(index_b2);
 
-                float Py = 2.0f * dot(b1, b2);
-                float Px = dot(b1, b1) - dot(b2, b2);
+                float non_diag = dot(b1, b2);
+                float diag1 = dot(b1, b1);
+                float diag2 = dot(b2, b2);
+                float Py = 2.0f * non_diag;
+                float Px = diag1 - diag2;
                 float PL = sqrtf(Px * Px + Py * Py);
-
-                convergence = ss_max(convergence, fabs(Py));
-
+                
+                // A stopping criterion
+                // "4 One-sided Jacobi", Jameset al. el, Jacobi's method is more accurate than QR
+                if( fabs( non_diag ) <= tol * sqrtf( diag1 * diag2 ) )
+                {
+                    continue;
+                }
                 if (PL == 0.0f || Py == 0.0f )
                 {
                     continue; // no rotation
                 }
+
+                converged = false;
 
                 float sgn = 0.0f < Px ? 1.0f : -1.0f;
                 float Hx = PL + Px * sgn;
@@ -502,13 +513,6 @@ namespace sen
                 V.set_col(index_b1, +c * b1_v + s * b2_v);
                 V.set_col(index_b2, -s * b1_v + c * b2_v);
             }
-
-            if (convergence < convergence_previous && convergence != 0.0f)
-            {
-                convergence_previous = convergence;
-                continue;
-            }
-            break;
         }
 
         return { V, B };
