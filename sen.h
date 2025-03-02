@@ -71,8 +71,7 @@ namespace sen
         {
             m_numberOfRows = M;
             m_numberOfCols = N;
-            delete[] m_storage;
-            m_storage = new float[M * N];
+            m_storage = std::unique_ptr<float[]>(new float[M * N]);
         }
 
         int rows() const { return m_numberOfRows; }
@@ -92,7 +91,7 @@ namespace sen
 
         int m_numberOfRows = 0;
         int m_numberOfCols = 0;
-        float* m_storage = 0;
+        std::unique_ptr<float[]> m_storage;
     };
 
     // Example of Mat<3 /*out*/, 2 /*in*/>
