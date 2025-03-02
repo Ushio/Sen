@@ -482,7 +482,8 @@ namespace sen
                 
                 // A stopping criterion
                 // "4 One-sided Jacobi", Jameset al. el, Jacobi's method is more accurate than QR
-                if( fabs( non_diag ) <= tol * sqrtf( diag1 * diag2 ) )
+                // note that diag1 and diag2 can be zero in some bad-conditioned matrix but need to support them.
+                if( diag1 * diag2 <= FLT_MIN || fabs(non_diag) / sqrtf(diag1 * diag2) <= tol)
                 {
                     continue;
                 }
