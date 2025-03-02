@@ -112,12 +112,19 @@ int main() {
         DrawGrid(GridAxis::XY, 1.0f, 10, { 128, 128, 128 });
         DrawXYZAxis(1.0f);
 
-        static std::vector<glm::vec2> points = {
-            {0, 0},
-            {1.5, 1.0},
-            {2, 3},
-            {4, 3.5},
-        };
+        static std::vector<glm::vec2> points;
+        if (points.empty())
+        {
+            PCG rng;
+
+            glm::vec2 p = {};
+            for (int i = 0; i < 10; i++)
+            {
+                points.push_back(p);
+                p.x += 0.3f + glm::mix(-0.2f, 0.2f, rng.uniformf());
+                p.y += 0.3f + glm::mix(-0.2f, 0.2f, rng.uniformf());
+            }
+        }
 
         PCG colorRng;
         for (int i = 0; i < points.size() - 1; i++)
@@ -129,7 +136,7 @@ int main() {
                 { 255 * colorRng.uniformf(),255 * colorRng.uniformf(),255 * colorRng.uniformf() });
         }
 
-        static glm::vec3 ik_terminator = { 4, 3.5, 0 };
+        static glm::vec3 ik_terminator = { points[points.size()-1].x, points[points.size() - 1].y, 0};
         ManipulatePosition(camera, &ik_terminator, 0.4f);
         ik_terminator.z = 0;
 
@@ -140,57 +147,8 @@ int main() {
         for (int itr = 0; itr < N; itr++)
         {
             glm::vec2 tip = points[points.size() - 1];
-            glm::vec2 goal =
-                glm::mix(
-                    begining,
-                    glm::vec2(ik_terminator.x, ik_terminator.y),
-                    (float)(itr + 1) / N);
+            glm::vec2 goal = glm::vec2(ik_terminator.x, ik_terminator.y);
 
-#if 0
-            sen::MatDyn A;
-            A.allocate(2, N_Joint * 2);
-
-            for (int j = 0; j < N_Joint; j++)
-            {
-                glm::vec2 X = tip - points[j];
-
-                A(0, j * 2 + 0) = X.x; A(0, j * 2 + 1) = -X.y;
-                A(1, j * 2 + 0) = X.y; A(1, j * 2 + 1) = X.x;
-            }
-
-            // sen::print(A);
-
-            glm::vec2 deltaX = goal - tip;
-
-            sen::MatDyn pinv = sen::svd_BV(A).pinv();
-            sen::MatDyn delta_cs = pinv* sen::Mat<2, 1>().set(
-                deltaX.x,
-                deltaX.y);
-
-            std::vector<glm::vec2> localDirs(N_Joint);
-            for (int i = 0; i < points.size() - 1; i++)
-            {
-                localDirs[i] = points[i + 1] - points[i];
-            }
-
-            for (int i = 0; i < localDirs.size(); i++)
-            {
-                float delta_c = delta_cs(i * 2,     0);
-                float delta_s = delta_cs(i * 2 + 1, 0);
-
-                glm::mat2 R = {
-                    1.0f + delta_c, delta_s,
-                   -delta_s, 1.0f + delta_c
-                };
-
-                glm::vec2 src_dir = localDirs[i];
-                glm::vec2 new_dir = R * src_dir;
-
-                // preserve length
-                float src_length = glm::length(src_dir);
-                localDirs[i] = glm::normalize(new_dir) * src_length;
-            }
-#else
             sen::MatDyn A;
             A.allocate(2, N_Joint);
 
@@ -200,13 +158,18 @@ int main() {
 
                 float theta = atan2(X.y, X.x);
 
-                A(0, j) = -sin(theta) * X.x - cos(theta) * X.y;
-                A(1, j) = -sin(theta) * X.y + cos(theta) * X.x;
+                // dx/dtheta, dy/dtheta
+                float dx_dtheta = -X.y;
+                float dy_dtheta = X.x;
+
+                A(0, j) = dx_dtheta;
+                A(1, j) = dy_dtheta;
             }
 
             glm::vec2 deltaX = goal - tip;
 
-            sen::MatDyn pinv = sen::svd_BV(A).pinv(0.1f);
+            // underdetermined, |x| -> min under |Ax = b| 
+            sen::MatDyn pinv = sen::svd_BV(A).pinv();
             sen::MatDyn delta_thetas = pinv * sen::Mat<2, 1>().set(
                 deltaX.x,
                 deltaX.y);
@@ -218,8 +181,10 @@ int main() {
                 localDirs[i] = points[i + 1] - points[i];
             }
 
+            float p_delta_theta = 0.0f;
             for (int i = 0; i < localDirs.size(); i++)
             {
+                // devatable way to apply rot
                 float delta_theta = delta_thetas(i, 0);
 
                 float s = sin(delta_theta);
@@ -236,7 +201,6 @@ int main() {
             }
 
             // sen::print(A);
-#endif
 
             glm::vec2 new_tip = { 0, 0 };
             points[0] = new_tip;
