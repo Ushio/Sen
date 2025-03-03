@@ -1,8 +1,12 @@
 #pragma once
 
 #include <intrin.h>
+
+#if defined(SEN_ENABLE_ASSERTION)
 #define SEN_ASSERT(ExpectTrue) if((ExpectTrue) == 0) { __debugbreak(); }
-//#define SEN_ASSERT(ExpectTrue) 
+#else
+#define SEN_ASSERT(ExpectTrue) 
+#endif
 
 namespace sen
 {
@@ -187,55 +191,6 @@ namespace sen
         const float& operator[](int i) const
         {
             return m_storage[i];
-        }
-
-        using ColType = typename cond<numberOfRows == -1 && numberOfCols == -1, Mat<-1, -1>, Mat<numberOfRows, 1>>::type;
-        using RowType = typename cond<numberOfRows == -1 && numberOfCols == -1, Mat<-1, -1>, Mat<1, numberOfCols>>::type;
-
-        ColType col(int i_col) const
-        {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
-
-            ColType c;
-            c.allocate(rows(), 1);
-            for (int i = 0; i < rows(); i++)
-            {
-                c(i, 0 ) = (*this)(i, i_col);
-            }
-            return c;
-        }
-
-        template<int M, int N>
-        void set_col(int i_col, const Mat<M, N>& c /* static or dynamic */)
-        {
-            SEN_ASSERT(0 <= i_col && i_col < cols() && "out of bounds");
-            SEN_ASSERT(rows() == c.rows());
-            for (int i = 0; i < rows(); i++)
-            {
-                (*this)(i, i_col) = c(i, 0);
-            }
-        }
-
-        RowType row(int i_row) const 
-        {
-            SEN_ASSERT(0 <= i_row && i_row < rows() && "");
-            RowType r;
-            r.allocate(1, cols());
-            for (int i = 0; i < cols(); i++)
-            {
-                r(0, i) = (*this)(i_row, i);
-            }
-            return r;
-        }
-        template<int M, int N>
-        void set_row(int i_row, const Mat<M, N>& r /* static or dynamic */)
-        {
-            SEN_ASSERT(0 <= i_row && i_row < rows() && "");
-            SEN_ASSERT(cols() == r.cols());
-            for (int i = 0; i < cols(); i++)
-            {
-                (*this)(i_row, i) = r(0, i);
-            }
         }
 
         float* begin() { return &m_storage[0]; }
@@ -436,8 +391,7 @@ namespace sen
 
         float singular(int i) const
         {
-            auto c = B.col(i);
-            return sqrtf(dot(c, c));
+            return sqrtf(column_dot(B, i, i));
         }
         int nSingulars() const
         {
@@ -445,23 +399,16 @@ namespace sen
         }
         Mat<cols, rows> pinv( float tol = 1e-7f ) const
         {
-            auto sigma_reg_U_transposed = transpose(B);
-            for (int i = 0; i < sigma_reg_U_transposed.rows(); i++)
+            auto B_reg = B;
+            for (int i_col = 0; i_col < B_reg.cols(); i_col++)
             {
-                auto Br = sigma_reg_U_transposed.row(i);
-                float sigma2 = (Br * transpose(Br))(0, 0);
-
-                if ( sigma2 < tol * tol )
+                float sigma2 = column_dot(B_reg, i_col, i_col);
+                for (int i_row = 0; i_row < B_reg.rows(); i_row++)
                 {
-                    Br.set_zero();
-                    sigma_reg_U_transposed.set_row(i, Br);
-                }
-                else
-                {
-                    sigma_reg_U_transposed.set_row(i, Br / sigma2);
+                    B_reg(i_row, i_col) = sigma2 < tol * tol ? 0.0f : B_reg(i_row, i_col) / sigma2;
                 }
             }
-            return V * sigma_reg_U_transposed;
+            return V * transpose(B_reg);
         }
     };
     using SVDDyn = SVD<-1, -1>;
