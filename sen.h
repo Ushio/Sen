@@ -408,6 +408,19 @@ namespace sen
         return d;
     }
 
+    template <int rows, int cols>
+    float column_dot(const Mat<rows, cols>& m, int col_0, int col_1)
+    {
+        int col_0_head = col_0 * m.rows();
+        int col_1_head = col_1 * m.rows();
+        float r = 0.0f;
+        for (int i_row = 0; i_row < m.rows(); i_row++)
+        {
+            r += m[col_0_head + i_row] * m[col_1_head + i_row];
+        }
+        return r;
+    }
+
     // all combinations of 0 to n - 1
 #define CYCLIC_BY_ROW(n, a, b) \
     for (int a = 0; a < (n); a++) \
@@ -470,12 +483,9 @@ namespace sen
 
             CYCLIC_BY_ROW(B.cols(), index_b1, index_b2)
             {
-                auto b1 = B.col(index_b1);
-                auto b2 = B.col(index_b2);
-
-                float non_diag = dot(b1, b2);
-                float diag1 = dot(b1, b1);
-                float diag2 = dot(b2, b2);
+                float non_diag = column_dot(B, index_b1, index_b2);
+                float diag1 = column_dot(B, index_b1, index_b1);
+                float diag2 = column_dot(B, index_b2, index_b2);
                 float Py = 2.0f * non_diag;
                 float Px = diag1 - diag2;
                 float PL = sqrtf(Px * Px + Py * Py);
@@ -506,13 +516,21 @@ namespace sen
                 //float s = sin(two_theta * 0.5f);
                 //float c = cos(two_theta * 0.5f);
 
-                B.set_col(index_b1, +c * b1 + s * b2);
-                B.set_col(index_b2, -s * b1 + c * b2);
+                for (int i_row = 0; i_row < B.rows(); i_row++)
+                {
+                    float b1 = B(i_row, index_b1);
+                    float b2 = B(i_row, index_b2);
+                    B(i_row, index_b1) = +c * b1 + s * b2;
+                    B(i_row, index_b2) = -s * b1 + c * b2;
+                }
 
-                auto b1_v = V.col(index_b1);
-                auto b2_v = V.col(index_b2);
-                V.set_col(index_b1, +c * b1_v + s * b2_v);
-                V.set_col(index_b2, -s * b1_v + c * b2_v);
+                for (int i_row = 0; i_row < V.rows(); i_row++)
+                {
+                    float b1 = V(i_row, index_b1);
+                    float b2 = V(i_row, index_b2);
+                    V(i_row, index_b1) = +c * b1 + s * b2;
+                    V(i_row, index_b2) = -s * b1 + c * b2;
+                }
             }
         }
 
