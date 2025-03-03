@@ -431,4 +431,36 @@ TEST_CASE("SVD", "") {
             REQUIRE(fabs(v) < 1.0e-5f);
         }
     }
+
+    BENCHMARK("SVD static") {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < 10000; i++)
+        {
+            sen::Mat<4, 4> A;
+            for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+            sen::SVD<4, 4> svd = sen::svd_BV(A);
+            sen::Mat<4, 4> A_composed = svd.B * sen::transpose(svd.V);
+
+            s += A_composed(0, 0);
+        }
+        return s;
+    };
+    BENCHMARK("SVD dynamic") {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < 10000; i++)
+        {
+            sen::MatDyn A;
+            A.allocate(4, 4);
+            for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+            sen::SVDDyn svd = sen::svd_BV(A);
+            sen::MatDyn A_composed = svd.B * sen::transpose(svd.V);
+
+            s += A_composed(0, 0);
+        }
+        return s;
+    };
 }
