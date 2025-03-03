@@ -347,22 +347,6 @@ namespace sen
         return r;
     }
 
-    // frobenius inner product
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    float dot(const Mat<lhs_rows, lhs_cols>& a, const Mat<rhs_rows, rhs_cols>& b)
-    {
-        SEN_ASSERT(a.rows() == b.rows() && "invalid operation");
-        SEN_ASSERT(a.cols() == b.cols() && "invalid operation");
-
-        float d = 0.0f;
-        for (int i = 0; i < a.size(); i++)
-        {
-            d += a[i] * b[i];
-        }
-
-        return d;
-    }
-
     template <int rows, int cols>
     float column_dot(const Mat<rows, cols>& m, int col_0, int col_1)
     {
