@@ -468,6 +468,30 @@ namespace sen
         return { V, B };
     }
 
+
+    template <int s>
+    Mat<s, s> cholesky_decomposition(const Mat<s, s>& A)
+    {
+        Mat<s, s> L;
+        L.allocate(A.rows(), A.cols());
+        L.set_zero();
+        for (int i_col = 0; i_col < L.cols(); i_col++)
+        {
+            for (int i_row = i_col; i_row < L.rows(); i_row++)
+            {
+                float sum = 0.0f;
+                for (int i = 0; i < i_col; i++)
+                {
+                    sum += L(i_row, i) * L(i_col, i);
+                }
+                float v = A(i_row, i_col) - sum;
+                L(i_row, i_col) = i_col == i_row ? sqrtf(ss_max(v, 0.0f)) : v / L(i_col, i_col);
+            }
+        }
+
+        return L;
+    }
+
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
     {

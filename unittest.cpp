@@ -428,3 +428,21 @@ TEST_CASE("SVD", "") {
         return s;
     };
 }
+
+TEST_CASE("cholesky", "") {
+    pr::PCG rng;
+    for (int i = 0; i < 100000; i++)
+    {
+        sen::Mat<10, 5> data;
+        for (auto& v : data) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+        sen::Mat<5, 5> A = sen::transpose(data) * data / 10.0f;
+        sen::Mat<5, 5> L = sen::cholesky_decomposition(A);
+        //sen::print(A);
+        //sen::print(L * sen::transpose(L));
+
+        for (auto v : A - L * sen::transpose(L)) {
+            REQUIRE(fabs(v) < 1.0e-5f);
+        }
+    }
+}
