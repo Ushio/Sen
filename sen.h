@@ -485,7 +485,13 @@ namespace sen
                     sum += L(i_row, i) * L(i_col, i);
                 }
                 float v = A(i_row, i_col) - sum;
-                L(i_row, i_col) = i_col == i_row ? sqrtf(ss_max(v, 0.0f)) : v / L(i_col, i_col);
+                float l = i_col == i_row ? sqrtf(v) : v / L(i_col, i_col);
+                if (isfinite(l) == false)
+                {
+                    L.set_zero();
+                    return L;
+                }
+                L(i_row, i_col) = l;
             }
         }
 
