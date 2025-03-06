@@ -468,6 +468,12 @@ namespace sen
         return { V, B };
     }
 
+    template <int rows, int cols>
+    Mat<cols, rows> pinv(const Mat<rows, cols>& A)
+    {
+        auto svd = sen::svd_BV(A);
+        return svd.pinv();
+    }
 
     template <int s>
     Mat<s, s> cholesky_decomposition(const Mat<s, s>& A)
@@ -496,6 +502,46 @@ namespace sen
         }
 
         return L;
+    }
+
+    template <int s, int t /*1 or - 1*/>
+    inline sen::Mat<s, t> solve_cholesky( const Mat<s, s>& A, const sen::Mat<s, t>& b )
+    {
+        static_assert(t == 1 || t == -1, "invalid b");
+        Mat<s, s> L = cholesky_decomposition(A);
+
+        print(L);
+
+        // solve Lb'=b
+        sen::Mat<s, t> bp;
+        bp.allocate(b.rows(), 1);
+        for (int i_row = 0; i_row < b.rows(); i_row++)
+        {
+            float sum = 0.0f;
+            for (int i = 0; i < i_row; i++)
+            {
+                sum += L(i_row, i) * bp(i, 0);
+            }
+            bp(i_row, 0) = (b(i_row, 0) - sum) / L(i_row, i_row);
+        }
+
+        print(bp);
+
+        sen::Mat<s, t> x;
+        x.allocate(b.rows(), 1);
+        for (int i_row = b.rows() - 1; 0 <= i_row; i_row--)
+        {
+            float sum = 0.0f;
+            for (int i = i_row + 1; i < b.rows(); i++)
+            {
+                sum += L(i, i_row) * x(i, 0);
+            }
+            x(i_row, 0) = (bp(i_row, 0) - sum) / L(i_row, i_row);
+        }
+
+        print(x);
+
+        return x;
     }
 
     template <int rows, int cols>
