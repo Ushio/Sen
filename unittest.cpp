@@ -5,6 +5,13 @@
 #include "prp.hpp"
 #include <set>
 
+#define ENABLE_EIGEN_BENCH 0
+
+#if ENABLE_EIGEN_BENCH
+#include <Eigen/Dense>
+#include <Eigen/SVD>
+#endif
+
 // for tests. MxN = glm::mat<N, M, float> on GLM
 template <int rows, int cols>
 glm::mat<cols, rows, float> toGLM(const sen::Mat<rows, cols>& m)
@@ -479,21 +486,53 @@ TEST_CASE("overdetermined", "") {
         for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
 
         sen::Mat<3, 1> x = solve_qr(A, b);
-        // print(x - sen::pinv(A) * b);
+        sen::Mat<3, 1> x_svd = sen::pinv(A) * b;
+        // print(x - x_svd);
 
-        for (auto v : x - sen::pinv(A) * b ) {
+        for (auto v : x - x_svd) {
             REQUIRE(fabs(v) < 1.0e-4f);
         }
 
         sen::MatDyn x_dynamic = solve_qr(sen::MatDyn(A), sen::MatDyn(b));
         REQUIRE(x == x_dynamic);
+
+#if ENABLE_EIGEN_BENCH
+        // Eigen test
+        Eigen::Matrix<float, 5, 3> eA;
+        for (int i_col = 0; i_col < A.cols(); i_col++)
+        for (int i_row = 0; i_row < A.rows(); i_row++)
+        {
+            eA(i_row, i_col) = A(i_row, i_col);
+        }
+        Eigen::Matrix<float, 5, 1> eb;
+        for (int i_row = 0; i_row < b.rows(); i_row++)
+        {
+            eb(i_row, 0) = b(i_row, 0);
+        }
+        
+        Eigen::Matrix<float, 3, 1> ex;
+
+        // svd
+        ex = Eigen::JacobiSVD<decltype(eA)>(eA, Eigen::ComputeFullU | Eigen::ComputeFullV).solve(eb);
+        for (int i = 0; i < x_svd.rows(); i++)
+        {
+            REQUIRE(fabs(ex(i, 0) - x_svd(i, 0)) < 1.0e-4f);
+        }
+        // qr
+        ex = Eigen::HouseholderQR<decltype(eA)>(eA).solve(eb);
+        for (int i = 0; i < x_svd.rows(); i++)
+        {
+            REQUIRE(fabs(ex(i, 0) - x_svd(i, 0)) < 1.0e-4f);
+        }
+#endif
     }
 
+    const int N_Try = 100000;
     BENCHMARK("svd solver")
     {
         pr::PCG rng;
         float s = 0;
-        for (int i = 0; i < 100000; i++)
+        for (int i = 0; i < N_Try; i++)
         {
             sen::Mat<8, 5> A;
             sen::Mat<8, 1> b;
@@ -511,7 +550,7 @@ TEST_CASE("overdetermined", "") {
     {
         pr::PCG rng;
         float s = 0;
-        for (int i = 0; i < 100000; i++)
+        for (int i = 0; i < N_Try; i++)
         {
             sen::Mat<8, 5> A;
             sen::Mat<8, 1> b;
@@ -525,6 +564,61 @@ TEST_CASE("overdetermined", "") {
         }
         return s;
     };
+
+#if ENABLE_EIGEN_BENCH
+    BENCHMARK("eigen svd solver")
+    {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < N_Try; i++)
+        {
+            Eigen::Matrix<float, 8, 5> A;
+            Eigen::Matrix<float, 8, 1> b;
+
+            for (int i_col = 0; i_col < A.cols(); i_col++)
+            for (int i_row = 0; i_row < A.rows(); i_row++)
+            {
+                A(i_row, i_col) = glm::mix(-1.0f, 1.0f, rng.uniformf());
+            }
+            for (int i_row = 0; i_row < A.rows(); i_row++)
+            {
+                b(i_row, 0) = glm::mix(-1.0f, 1.0f, rng.uniformf());
+            }
+
+            Eigen::Matrix<float, 5, 1> x = Eigen::JacobiSVD<decltype(A)>(A, Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+
+            for (auto v : x)
+                s += v;
+        }
+        return s;
+    };
+    BENCHMARK("eigen householder qr solver")
+    {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < N_Try; i++)
+        {
+            Eigen::Matrix<float, 8, 5> A;
+            Eigen::Matrix<float, 8, 1> b;
+
+            for (int i_col = 0; i_col < A.cols(); i_col++)
+            for (int i_row = 0; i_row < A.rows(); i_row++)
+            {
+                A(i_row, i_col) = glm::mix(-1.0f, 1.0f, rng.uniformf());
+            }
+            for (int i_row = 0; i_row < A.rows(); i_row++)
+            {
+                b(i_row, 0) = glm::mix(-1.0f, 1.0f, rng.uniformf());
+            }
+
+            Eigen::Matrix<float, 5, 1> x = Eigen::HouseholderQR<decltype(A)>(A).solve(b);
+
+            for (auto v : x)
+                s += v;
+        }
+        return s;
+    };
+#endif
 }
 
 TEST_CASE("qr", "") {

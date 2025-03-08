@@ -59,10 +59,12 @@ project "unittest"
     targetdir "bin/"
     systemversion "latest"
     flags { "MultiProcessorCompile", "NoPCH" }
+    buildoptions "/bigobj"
 
     -- Src
     files { "unittest.cpp", "catch_amalgamated.cpp", "catch_amalgamated.hpp" }
     includedirs { "." }
+    includedirs { "libs/eigen-3.4.0"}
 
     -- UTF8
     postbuildcommands { 
