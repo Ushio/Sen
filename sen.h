@@ -578,30 +578,32 @@ namespace sen
             }
 
             // process the following columns
+            // note that upper part does not change.
             for (int i_col = i + 1; i_col < A.cols(); i_col++)
             {
                 float VdotCol = 0.0f;
-                for (int i_row = 0; i_row < A.rows(); i_row++)
+                for (int i_row = i; i_row < A.rows(); i_row++)
                 {
                     VdotCol += v(i_row, 0) * A(i_row, i_col);
                 }
                 float k = 2.0f * VdotCol / v_len2;
-                for (int i_row = 0; i_row < A.rows(); i_row++)
+                for (int i_row = i; i_row < A.rows(); i_row++)
                 {
                     A(i_row, i_col) -= k * v(i_row, 0);
                 }
             }
 
             // process Q_transposed
+            // note that upper part does not change.
             for (int i_col = 0; i_col < Q_transposed.cols(); i_col++)
             {
                 float VdotCol = 0.0f;
-                for (int i_row = 0; i_row < A.rows(); i_row++)
+                for (int i_row = i; i_row < A.rows(); i_row++)
                 {
                     VdotCol += v(i_row, 0) * Q_transposed(i_row, i_col);
                 }
                 float k = 2.0f * VdotCol / v_len2;
-                for (int i_row = 0; i_row < A.rows(); i_row++)
+                for (int i_row = i; i_row < A.rows(); i_row++)
                 {
                     Q_transposed(i_row, i_col) -= k * v(i_row, 0);
                 }
