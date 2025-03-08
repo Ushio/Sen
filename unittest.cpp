@@ -447,51 +447,48 @@ TEST_CASE("cholesky", "") {
     }
 }
 
-//TEST_CASE("overdetermined", "") {
-//    sen::Mat<3, 2> A;
-//    A.set(
-//        1, 1,
-//        0, 2,
-//        1, 0);
-//
-//    sen::Mat<3, 1> b;
-//    b.set(
-//        1,
-//        2,
-//        1
-//    );
-//
-//    // Normal Equation
-//    // A^T * A x = A^T b
-//    sen::Mat<2, 3> AT = sen::transpose(A);
-//    sen::Mat<2, 1> x = solve_cholesky(AT * A, AT * b);
-//    print(x);
-//
-//    pr::PCG rng;
-//    for (int i = 0; i < 1000; i++)
-//    {
-//        sen::Mat<4, 3> A;
-//        sen::Mat<4, 1> b;
-//        for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
-//        for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
-//
-//        sen::Mat<3, 4> AT = sen::transpose(A);
-//        sen::Mat<3, 1> x = solve_cholesky(AT * A, AT * b);
-//
-//        print(x);
-//        print(sen::pinv(A) * b);
-//
-//        //sen::SVD<4, 3> svd = sen::svd_BV(A);
-//        //for (int j = 0; j < svd.nSingulars(); j++)
-//        //{
-//        //    printf("singular %f\n", svd.singular(j));
-//        //}
-//
-//        //for (auto v : x - sen::pinv(A) * b ) {
-//        //    REQUIRE(fabs(v) < 1.0e-2f);
-//        //}
-//    }
-//}
+TEST_CASE("overdetermined", "") {
+    sen::Mat<3, 2> A;
+    A.set(
+        1, 1,
+        0, 2,
+        1, 0);
+
+    sen::Mat<3, 1> b;
+    b.set(
+        1,
+        2,
+        1
+    );
+
+    // Normal Equation
+    // A^T * A x = A^T b
+    sen::Mat<2, 3> AT = sen::transpose(A);
+    sen::Mat<2, 1> x = solve_cholesky(AT * A, AT * b);
+
+    sen::Mat<2, 1> x_2 = solve_qr(A, b);
+    //print(x_2);
+    //print(x);
+
+    pr::PCG rng;
+    for (int i = 0; i < 1000; i++)
+    {
+        sen::Mat<5, 3> A;
+        sen::Mat<5, 1> b;
+        for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+        for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+
+        sen::Mat<3, 1> x = solve_qr(A, b);
+        // print(x - sen::pinv(A) * b);
+
+        for (auto v : x - sen::pinv(A) * b ) {
+            REQUIRE(fabs(v) < 1.0e-4f);
+        }
+
+        sen::MatDyn x_dynamic = solve_qr(sen::MatDyn(A), sen::MatDyn(b));
+        REQUIRE(x == x_dynamic);
+    }
+}
 
 TEST_CASE("qr", "") {
     //sen::Mat<3, 2> A;

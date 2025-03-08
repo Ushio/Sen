@@ -510,8 +510,6 @@ namespace sen
         static_assert(t == 1 || t == -1, "invalid b");
         Mat<s, s> L = cholesky_decomposition(A);
 
-        print(L);
-
         // solve Lb'=b
         sen::Mat<s, t> bp;
         bp.allocate(b.rows(), 1);
@@ -525,8 +523,6 @@ namespace sen
             bp(i_row, 0) = (b(i_row, 0) - sum) / L(i_row, i_row);
         }
 
-        print(bp);
-
         sen::Mat<s, t> x;
         x.allocate(b.rows(), 1);
         for (int i_row = b.rows() - 1; 0 <= i_row; i_row--)
@@ -538,8 +534,6 @@ namespace sen
             }
             x(i_row, 0) = (bp(i_row, 0) - sum) / L(i_row, i_row);
         }
-
-        print(x);
 
         return x;
     }
@@ -610,6 +604,27 @@ namespace sen
             }
         }
         return { Q_transposed, A };
+    }
+
+    //template <int rows, int cols, int t /*1 or - 1*/>
+    template <int rows, int cols, int t>
+    inline Mat<cols, t> solve_qr(Mat<rows, cols> A, Mat<rows, t> b)
+    {
+        auto qr = qr_decomposition(A, b);
+
+        Mat<cols, t> x;
+        x.allocate(A.cols(), 1);
+        for (int r = A.cols() - 1; 0 <= r; r--)
+        {
+            float sum = 0.0f;
+            for (int i = r + 1; i < qr.R.cols(); i++)
+            {
+                sum += qr.R(r, i) * x(i, 0);
+            }
+            x(r, 0) = (qr.Q_transposed(r, 0) - sum) / qr.R(r, r);
+        }
+
+        return x;
     }
 
     template <int rows, int cols>
