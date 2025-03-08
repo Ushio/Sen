@@ -558,16 +558,11 @@ namespace sen
         Mat<rows, rows == -1 ? -1 : 1> v;
         v.allocate(A.rows(), 1);
 
-        for (int i = 0; i < A.cols(); i++)
+        for (int i = 0; i < A.cols() && i < A.rows() - 1; i++)
         {
             for (int j = 0; j < A.rows() ; j++)
             {
                 v(j, 0) = j < i ? 0.0f : -A(j, i);
-            }
-
-            if (A.rows() - 1 <= i) // no space to set zero
-            {
-                break;
             }
 
             float sgn = 0.0f < v(0, 0) ? 1.0f : -1.0f;
