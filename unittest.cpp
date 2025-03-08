@@ -401,11 +401,11 @@ TEST_CASE("SVD", "") {
         float s = 0;
         for (int i = 0; i < 10000; i++)
         {
-            sen::Mat<4, 4> A;
+            sen::Mat<8, 8> A;
             for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
 
-            sen::SVD<4, 4> svd = sen::svd_BV(A);
-            sen::Mat<4, 4> A_composed = svd.B * sen::transpose(svd.V);
+            sen::SVD<8, 8> svd = sen::svd_BV(A);
+            sen::Mat<8, 8> A_composed = svd.B * sen::transpose(svd.V);
 
             s += A_composed(0, 0);
         }
@@ -417,7 +417,7 @@ TEST_CASE("SVD", "") {
         for (int i = 0; i < 10000; i++)
         {
             sen::MatDyn A;
-            A.allocate(4, 4);
+            A.allocate(8, 8);
             for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
 
             sen::SVDDyn svd = sen::svd_BV(A);
@@ -447,48 +447,112 @@ TEST_CASE("cholesky", "") {
     }
 }
 
-TEST_CASE("overdetermined", "") {
-    sen::Mat<3, 2> A;
-    A.set(
-        1, 1,
-        0, 2,
-        1, 0);
+//TEST_CASE("overdetermined", "") {
+//    sen::Mat<3, 2> A;
+//    A.set(
+//        1, 1,
+//        0, 2,
+//        1, 0);
+//
+//    sen::Mat<3, 1> b;
+//    b.set(
+//        1,
+//        2,
+//        1
+//    );
+//
+//    // Normal Equation
+//    // A^T * A x = A^T b
+//    sen::Mat<2, 3> AT = sen::transpose(A);
+//    sen::Mat<2, 1> x = solve_cholesky(AT * A, AT * b);
+//    print(x);
+//
+//    pr::PCG rng;
+//    for (int i = 0; i < 1000; i++)
+//    {
+//        sen::Mat<4, 3> A;
+//        sen::Mat<4, 1> b;
+//        for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+//        for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+//
+//        sen::Mat<3, 4> AT = sen::transpose(A);
+//        sen::Mat<3, 1> x = solve_cholesky(AT * A, AT * b);
+//
+//        print(x);
+//        print(sen::pinv(A) * b);
+//
+//        //sen::SVD<4, 3> svd = sen::svd_BV(A);
+//        //for (int j = 0; j < svd.nSingulars(); j++)
+//        //{
+//        //    printf("singular %f\n", svd.singular(j));
+//        //}
+//
+//        //for (auto v : x - sen::pinv(A) * b ) {
+//        //    REQUIRE(fabs(v) < 1.0e-2f);
+//        //}
+//    }
+//}
 
-    sen::Mat<3, 1> b;
-    b.set(
-        1,
-        2,
-        1
-    );
+TEST_CASE("qr", "") {
+    //sen::Mat<3, 2> A;
+    //A.set(
+    //    1, 1,
+    //    0, 2,
+    //    1, 0);
 
-    // Normal Equation
-    // A^T * A x = A^T b
-    sen::Mat<2, 3> AT = sen::transpose(A);
-    sen::Mat<2, 1> x = solve_cholesky(AT * A, AT * b);
-    print(x);
+    //sen::Mat<3, 1> b;
+    //b.set(
+    //    1,
+    //    2,
+    //    1
+    //);
+    //sen::Mat<3, 3> I;
+    //I.set_identity();
+    //sen::QR<3, 2> qr = sen::qr_decomposition(A, I);
+    //sen::print(sen::transpose(qr.Q_transposed) * qr.R);
+
+    //unsigned int current_word = 0;
+    //_controlfp_s( &current_word, _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT, _MCW_EM );
+    //
 
     pr::PCG rng;
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < 100; i++)
     {
-        sen::Mat<4, 3> A;
-        sen::Mat<4, 1> b;
-        for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
-        for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+        sen::Mat<4, 4> A;
+        for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
 
-        sen::Mat<3, 4> AT = sen::transpose(A);
-        sen::Mat<3, 1> x = solve_cholesky(AT * A, AT * b);
+        sen::Mat<4, 4> I;
+        I.set_identity();
+        sen::QR<4, 4> qr = sen::qr_decomposition(A, I);
+        sen::Mat<4, 4> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
 
-        print(x);
-        print(sen::pinv(A) * b);
+        //sen::print(A);
+        //sen::print(A_composed);
 
-        //sen::SVD<4, 3> svd = sen::svd_BV(A);
-        //for (int j = 0; j < svd.nSingulars(); j++)
-        //{
-        //    printf("singular %f\n", svd.singular(j));
-        //}
+        for (auto v : A - A_composed) {
+            REQUIRE(fabs(v) < 1.0e-5f);
+        }
 
-        //for (auto v : x - sen::pinv(A) * b ) {
-        //    REQUIRE(fabs(v) < 1.0e-2f);
-        //}
+        sen::QR<-1, -1> qr_dynamic = sen::qr_decomposition(sen::MatDyn(A), sen::MatDyn(I));
+        REQUIRE(qr.Q_transposed == qr_dynamic.Q_transposed);
+        REQUIRE(qr.R == qr_dynamic.R);
     }
+
+    BENCHMARK("QR static") {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < 10000; i++)
+        {
+            sen::Mat<8, 8> A;
+            for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+            sen::Mat<8, 8> I;
+            I.set_identity();
+            sen::QR<8, 8> qr = sen::qr_decomposition(A, I);
+            sen::Mat<8, 8> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+
+            s += A_composed(0, 0);
+        }
+        return s;
+    };
 }

@@ -544,6 +544,77 @@ namespace sen
         return x;
     }
 
+    template <int rows, int cols, int q_cols = rows>
+    struct QR
+    {
+        Mat<rows, q_cols> Q_transposed; // = Hn x Hn-1 x ... x H2 x H1
+        Mat<rows, cols> R;
+    };
+
+    // householder QR decomposition
+    template <int rows, int cols, int q_cols = rows>
+    inline QR<rows, cols, q_cols> qr_decomposition(Mat<rows, cols> A, Mat<rows, q_cols> Q_transposed)
+    {
+        Mat<rows, rows == -1 ? -1 : 1> v;
+        v.allocate(A.rows(), 1);
+
+        for (int i = 0; i < A.cols(); i++)
+        {
+            for (int j = 0; j < A.rows() ; j++)
+            {
+                v(j, 0) = j < i ? 0.0f : -A(j, i);
+            }
+
+            if (A.rows() - 1 <= i) // no space to set zero
+            {
+                break;
+            }
+
+            float sgn = 0.0f < v(0, 0) ? 1.0f : -1.0f;
+            float x_len = sqrtf(column_dot(v, 0, 0));
+            v(i, 0) += sgn * x_len;
+            float v_len2 = column_dot(v, 0, 0);
+
+            // process the column
+            A(i, i) = sgn * x_len;
+            for (int i_row = i + 1; i_row < A.rows(); i_row++)
+            {
+                A(i_row, i) = 0.0f;
+            }
+
+            // process the following columns
+            for (int i_col = i + 1; i_col < A.cols(); i_col++)
+            {
+                float VdotCol = 0.0f;
+                for (int i_row = 0; i_row < A.rows(); i_row++)
+                {
+                    VdotCol += v(i_row, 0) * A(i_row, i_col);
+                }
+                float k = 2.0f * VdotCol / v_len2;
+                for (int i_row = 0; i_row < A.rows(); i_row++)
+                {
+                    A(i_row, i_col) -= k * v(i_row, 0);
+                }
+            }
+
+            // process Q_transposed
+            for (int i_col = 0; i_col < Q_transposed.cols(); i_col++)
+            {
+                float VdotCol = 0.0f;
+                for (int i_row = 0; i_row < A.rows(); i_row++)
+                {
+                    VdotCol += v(i_row, 0) * Q_transposed(i_row, i_col);
+                }
+                float k = 2.0f * VdotCol / v_len2;
+                for (int i_row = 0; i_row < A.rows(); i_row++)
+                {
+                    Q_transposed(i_row, i_col) -= k * v(i_row, 0);
+                }
+            }
+        }
+        return { Q_transposed, A };
+    }
+
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
     {
