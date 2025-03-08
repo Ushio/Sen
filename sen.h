@@ -608,7 +608,7 @@ namespace sen
 
     //template <int rows, int cols, int t /*1 or - 1*/>
     template <int rows, int cols, int t>
-    inline Mat<cols, t> solve_qr(Mat<rows, cols> A, Mat<rows, t> b)
+    inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)
     {
         auto qr = qr_decomposition(A, b);
 

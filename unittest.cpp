@@ -473,7 +473,7 @@ TEST_CASE("overdetermined", "") {
     sen::Mat<2, 3> AT = sen::transpose(A);
     sen::Mat<2, 1> x = solve_cholesky(AT * A, AT * b);
 
-    sen::Mat<2, 1> x_2 = solve_qr(A, b);
+    sen::Mat<2, 1> x_2 = solve_qr_overdetermined(A, b);
     //print(x_2);
     //print(x);
 
@@ -485,7 +485,7 @@ TEST_CASE("overdetermined", "") {
         for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
         for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
 
-        sen::Mat<3, 1> x = solve_qr(A, b);
+        sen::Mat<3, 1> x = solve_qr_overdetermined(A, b);
         sen::Mat<3, 1> x_svd = sen::pinv(A) * b;
         // print(x - x_svd);
 
@@ -493,7 +493,7 @@ TEST_CASE("overdetermined", "") {
             REQUIRE(fabs(v) < 1.0e-4f);
         }
 
-        sen::MatDyn x_dynamic = solve_qr(sen::MatDyn(A), sen::MatDyn(b));
+        sen::MatDyn x_dynamic = solve_qr_overdetermined(sen::MatDyn(A), sen::MatDyn(b));
         REQUIRE(x == x_dynamic);
 
 #if ENABLE_EIGEN_BENCH
@@ -557,7 +557,7 @@ TEST_CASE("overdetermined", "") {
             for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
             for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
 
-            sen::Mat<5, 1> x = solve_qr(A, b);
+            sen::Mat<5, 1> x = solve_qr_overdetermined(A, b);
 
             for (auto v : x)
                 s += v;
