@@ -488,6 +488,43 @@ TEST_CASE("overdetermined", "") {
         sen::MatDyn x_dynamic = solve_qr(sen::MatDyn(A), sen::MatDyn(b));
         REQUIRE(x == x_dynamic);
     }
+
+    BENCHMARK("svd solver")
+    {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < 100000; i++)
+        {
+            sen::Mat<8, 5> A;
+            sen::Mat<8, 1> b;
+            for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+            for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+
+            sen::Mat<5, 1> x = sen::pinv(A) * b;
+
+            for (auto v : x)
+                s += v;
+        }
+        return s;
+    };
+    BENCHMARK("qr solver") 
+    {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < 100000; i++)
+        {
+            sen::Mat<8, 5> A;
+            sen::Mat<8, 1> b;
+            for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+            for (auto& v : b) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+
+            sen::Mat<5, 1> x = solve_qr(A, b);
+
+            for (auto v : x)
+                s += v;
+        }
+        return s;
+    };
 }
 
 TEST_CASE("qr", "") {
