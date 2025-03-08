@@ -565,7 +565,7 @@ namespace sen
                 v(j, 0) = j < i ? 0.0f : -A(j, i);
             }
 
-            float sgn = 0.0f < v(0, 0) ? 1.0f : -1.0f;
+            float sgn = 0.0f < v(i, 0) ? 1.0f : -1.0f;
             float x_len = sqrtf(column_dot(v, 0, 0));
             v(i, 0) += sgn * x_len;
             float v_len2 = column_dot(v, 0, 0);
