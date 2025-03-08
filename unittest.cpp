@@ -529,6 +529,10 @@ TEST_CASE("qr", "") {
         //sen::print(A);
         //sen::print(A_composed);
 
+        for (auto v : I - qr.Q_transposed * sen::transpose(qr.Q_transposed)) {
+            REQUIRE(fabs(v) < 1.0e-5f);
+        }
+
         for (auto v : A - A_composed) {
             REQUIRE(fabs(v) < 1.0e-5f);
         }
@@ -536,6 +540,36 @@ TEST_CASE("qr", "") {
         sen::QR<-1, -1> qr_dynamic = sen::qr_decomposition(sen::MatDyn(A), sen::MatDyn(I));
         REQUIRE(qr.Q_transposed == qr_dynamic.Q_transposed);
         REQUIRE(qr.R == qr_dynamic.R);
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        int rows = 2 + rng.uniform() % 10;
+        int cols = 2 + rng.uniform() % 10;
+        sen::MatDyn A;
+        A.allocate(rows, cols);
+        for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+
+        sen::MatDyn I;
+        I.allocate(A.rows(), A.rows());
+        I.set_identity();
+        sen::QR<-1, -1> qr = sen::qr_decomposition(A, I);
+        sen::MatDyn A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+
+        for (int i_col = 0; i_col < qr.R.cols(); i_col++)
+        {
+            for (int i_row = i_col + 1; i_row < qr.R.rows(); i_row++)
+            {
+                REQUIRE(qr.R(i_row, i_col) == 0.0f);
+            }
+        }
+
+        //sen::print(A);
+        //sen::print(A_composed);
+
+        for (auto v : A - A_composed) {
+            REQUIRE(fabs(v) < 1.0e-4f);
+        }
     }
 
     BENCHMARK("QR static") {
