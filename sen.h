@@ -571,37 +571,31 @@ namespace sen
                 A(i_row, i) = 0.0f;
             }
 
-            // process the following columns
-            // note that upper part does not change.
-            for (int i_col = i + 1; i_col < A.cols(); i_col++)
+            // rhs = H_n * rhs
+            auto mul_householder = [i, v_len2](const auto&v, auto& rhs, int col_start)
             {
-                float VdotCol = 0.0f;
-                for (int i_row = i; i_row < A.rows(); i_row++)
+                for (int i_col = col_start; i_col < rhs.cols(); i_col++)
                 {
-                    VdotCol += v(i_row, 0) * A(i_row, i_col);
+                    // note that upper part does not change.
+
+                    float VdotCol = 0.0f;
+                    for (int i_row = i; i_row < rhs.rows(); i_row++)
+                    {
+                        VdotCol += v(i_row, 0) * rhs(i_row, i_col);
+                    }
+                    float k = 2.0f * VdotCol / v_len2;
+                    for (int i_row = i; i_row < rhs.rows(); i_row++)
+                    {
+                        rhs(i_row, i_col) -= k * v(i_row, 0);
+                    }
                 }
-                float k = 2.0f * VdotCol / v_len2;
-                for (int i_row = i; i_row < A.rows(); i_row++)
-                {
-                    A(i_row, i_col) -= k * v(i_row, 0);
-                }
-            }
+            };
+
+            // process the following columns
+            mul_householder(v, A, i + 1); 
 
             // process Q_transposed
-            // note that upper part does not change.
-            for (int i_col = 0; i_col < Q_transposed.cols(); i_col++)
-            {
-                float VdotCol = 0.0f;
-                for (int i_row = i; i_row < A.rows(); i_row++)
-                {
-                    VdotCol += v(i_row, 0) * Q_transposed(i_row, i_col);
-                }
-                float k = 2.0f * VdotCol / v_len2;
-                for (int i_row = i; i_row < A.rows(); i_row++)
-                {
-                    Q_transposed(i_row, i_col) -= k * v(i_row, 0);
-                }
-            }
+            mul_householder(v, Q_transposed, 0);
         }
         return { Q_transposed, A };
     }
@@ -612,6 +606,8 @@ namespace sen
     {
         auto qr = qr_decomposition(A, b);
 
+        // Solve Rx = Q^T b
+        //   where qr.Q_transposed == Q^T b
         Mat<cols, t> x;
         x.allocate(A.cols(), 1);
         for (int r = A.cols() - 1; 0 <= r; r--)
