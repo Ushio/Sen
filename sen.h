@@ -592,7 +592,7 @@ namespace sen
                 A(i_row, i) = 0.0f;
             }
 
-            // rhs = H_n * rhs
+            // rhs = H_i * rhs
             auto mul_householder = [i, v_len2](const auto&v, auto& rhs, int col_start)
             {
                 for (int i_col = col_start; i_col < rhs.cols(); i_col++)
