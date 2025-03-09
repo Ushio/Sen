@@ -621,6 +621,15 @@ namespace sen
         return { Q_transposed, A };
     }
 
+    template <int rows, int cols>
+    inline QR<rows, cols, rows> qr_decomposition(Mat<rows, cols> A)
+    {
+        sen::Mat<rows, rows> I;
+        I.allocate(A.rows(), A.rows());
+        I.set_identity();
+        return qr_decomposition(A, I);
+    }
+
     template <int rows, int cols, int t>
     inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)
     {
@@ -650,10 +659,7 @@ namespace sen
         static_assert(t == -1 || t == 1, "invalid arg");
 
         auto AT = transpose(A);
-        Mat<cols, cols> I;
-        I.allocate(A.cols(), A.cols());
-        I.set_identity();
-        auto qr = qr_decomposition(AT, I);
+        auto qr = qr_decomposition(AT);
         auto RT = transpose(qr.R);
 
         Mat<cols, t> xp;
