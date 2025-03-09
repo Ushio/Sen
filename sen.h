@@ -562,7 +562,7 @@ namespace sen
             float sgn = 0.0f < v(i, 0) ? 1.0f : -1.0f;
             float x_len = sqrtf(column_dot(v, 0, 0));
             v(i, 0) += sgn * x_len;
-            float v_len2 = column_dot(v, 0, 0);
+            float v_len2 = 2.0f * x_len * (x_len + fabs(A(i, i)));
 
             // process the column
             A(i, i) = sgn * x_len;
