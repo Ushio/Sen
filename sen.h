@@ -671,6 +671,47 @@ namespace sen
         return transpose(qr.Q_transposed) * xp;
     }
 
+    // Schwarz-Rutishauser
+    template <int rows, int cols>
+    inline QR<rows, cols> qr_decomposition_sr(const Mat<rows, cols>& A)
+    {
+        Mat<rows, rows> Q;
+        Mat<rows, cols> R;
+
+        Q.allocate(A.rows(), A.rows());
+        R.allocate(A.rows(), A.cols());
+        R.set_zero();
+
+        for (int i_col = 0; i_col < Q.cols(); i_col++)
+        for (int i_row = 0; i_row < Q.rows(); i_row++)
+        {
+            Q(i_row, i_col) = i_row < A.rows() && i_col < A.cols() ? A(i_row, i_col) : 0.0f;
+        }
+
+        for (int i = 0; i < R.cols(); i++)
+        {
+            for (int r = 0; r < i; r++)
+            {
+                float EdotA = column_dot(Q, r, i);
+                R(r, i) = EdotA;
+                for (int j = 0; j < Q.cols(); j++)
+                {
+                    Q(j, i) -= EdotA * Q(j, r);
+                }
+            }
+
+            float q_norm = sqrtf(column_dot(Q, i, i));
+            R(i, i) = q_norm;
+            float div = 1.0f / q_norm;
+            for (int r = 0; r < Q.rows(); r++)
+            {
+                Q(r, i) *= div;
+            }
+        }
+
+        return { transpose(Q), R };
+    }
+
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
     {

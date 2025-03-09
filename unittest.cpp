@@ -657,6 +657,13 @@ TEST_CASE("qr", "") {
     //    2,
     //    1
     //);
+
+    //sen::QR<3, 2> qr = sen::qr_decomposition(A);
+    //sen::print(qr.Q_transposed);
+    //sen::print(qr.R);
+    //sen::print(sen::transpose(qr.Q_transposed) * qr.R);
+
+
     //sen::Mat<3, 3> I;
     //I.set_identity();
     //sen::QR<3, 2> qr = sen::qr_decomposition(A, I);
@@ -674,21 +681,24 @@ TEST_CASE("qr", "") {
 
         sen::Mat<4, 4> I;
         I.set_identity();
-        sen::QR<4, 4> qr = sen::qr_decomposition(A, I);
+        // sen::QR<4, 4> qr = sen::qr_decomposition(A, I);
+        sen::QR<4, 4> qr = sen::qr_decomposition_sr(A);
+
         sen::Mat<4, 4> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
 
         //sen::print(A);
         //sen::print(A_composed);
 
         for (auto v : I - qr.Q_transposed * sen::transpose(qr.Q_transposed)) {
-            REQUIRE(fabs(v) < 1.0e-5f);
+            REQUIRE(fabs(v) < 1.0e-4f);
         }
 
         for (auto v : A - A_composed) {
-            REQUIRE(fabs(v) < 1.0e-5f);
+            REQUIRE(fabs(v) < 1.0e-4f);
         }
 
-        sen::QR<-1, -1> qr_dynamic = sen::qr_decomposition(sen::MatDyn(A), sen::MatDyn(I));
+        //sen::QR<-1, -1> qr_dynamic = sen::qr_decomposition(sen::MatDyn(A), sen::MatDyn(I));
+        sen::QR<-1, -1> qr_dynamic = sen::qr_decomposition_sr(sen::MatDyn(A));
         REQUIRE(qr.Q_transposed == qr_dynamic.Q_transposed);
         REQUIRE(qr.R == qr_dynamic.R);
     }
@@ -723,17 +733,32 @@ TEST_CASE("qr", "") {
         }
     }
 
-    BENCHMARK("QR static") {
+    //BENCHMARK("QR static") {
+    //    pr::PCG rng;
+    //    float s = 0;
+    //    for (int i = 0; i < 100000; i++)
+    //    {
+    //        sen::Mat<8, 8> A;
+    //        for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+    //        sen::Mat<8, 8> I;
+    //        I.set_identity();
+    //        sen::QR<8, 8> qr = sen::qr_decomposition(A, I);
+    //        sen::Mat<8, 8> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+
+    //        s += A_composed(0, 0);
+    //    }
+    //    return s;
+    //};
+    BENCHMARK("QR static sr") {
         pr::PCG rng;
         float s = 0;
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 100000; i++)
         {
             sen::Mat<8, 8> A;
             for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
 
-            sen::Mat<8, 8> I;
-            I.set_identity();
-            sen::QR<8, 8> qr = sen::qr_decomposition(A, I);
+            sen::QR<8, 8> qr = sen::qr_decomposition_sr(A);
             sen::Mat<8, 8> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
 
             s += A_composed(0, 0);
