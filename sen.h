@@ -575,9 +575,8 @@ namespace sen
             float x_len2 = 0.0f;
             for (int j = 0; j < A.rows() ; j++)
             {
-                float minus_x = j < i ? 0.0f : -A(j, i);
-                v[j] = minus_x;
-                x_len2 += minus_x * minus_x;
+                v[j] = j < i ? 0.0f : -A(j, i);
+                x_len2 += v[j] * v[j];
             }
 
             float sgn = 0.0f < v[i] ? 1.0f : -1.0f;
@@ -598,7 +597,6 @@ namespace sen
                 for (int i_col = col_start; i_col < rhs.cols(); i_col++)
                 {
                     // note that upper part does not change.
-
                     float VdotCol = 0.0f;
                     for (int i_row = i; i_row < rhs.rows(); i_row++)
                     {
