@@ -167,12 +167,18 @@ int main() {
             }
 
             glm::vec2 deltaX = goal - tip;
+            sen::MatDyn b;
+            b.allocate(2, 1);
+            b.set(deltaX.x, deltaX.y);
 
             // underdetermined, |x| -> min under |Ax = b| 
-            sen::MatDyn pinv = sen::svd_BV(A).pinv();
-            sen::MatDyn delta_thetas = pinv * sen::Mat<2, 1>().set(
-                deltaX.x,
-                deltaX.y);
+            // SVD solution
+            // sen::MatDyn delta_thetas = sen::pinv(A) * b;
+
+            // QR solution
+            sen::MatDyn delta_thetas = sen::solve_qr_underdetermined(A, b);
+
+            // printf("%f %f\n", delta_thetas(3, 0), delta_thetas_qr(3, 0));
 
             // sen::print(delta_theta);
             std::vector<glm::vec2> localDirs(N_Joint);

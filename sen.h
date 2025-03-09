@@ -98,6 +98,24 @@ namespace sen
         std::unique_ptr<float[]> m_storage;
     };
 
+    template<int N>
+    struct Vec
+    {
+        float& operator[](int i)
+        {
+            return m_storage[i];
+        }
+        const float& operator[](int i) const
+        {
+            return m_storage[i];
+        }
+        void allocate(int N)
+        {
+            m_storage.allocate(N, 1);
+        }
+        Storage<N, N == -1 ? -1 : 1> m_storage;
+    };
+
     // Example of Mat<3 /*out*/, 2 /*in*/>
     // | m(0,0), m(0,1) |
     // | m(1,0), m(1,1) |
@@ -549,19 +567,22 @@ namespace sen
     template <int rows, int cols, int q_cols = rows>
     inline QR<rows, cols, q_cols> qr_decomposition(Mat<rows, cols> A, Mat<rows, q_cols> Q_transposed)
     {
-        Mat<rows, rows == -1 ? -1 : 1> v;
-        v.allocate(A.rows(), 1);
+        Vec<rows> v;
+        v.allocate(A.rows());
 
         for (int i = 0; i < A.cols() && i < A.rows() - 1; i++)
         {
+            float x_len2 = 0.0f;
             for (int j = 0; j < A.rows() ; j++)
             {
-                v(j, 0) = j < i ? 0.0f : -A(j, i);
+                float minus_x = j < i ? 0.0f : -A(j, i);
+                v[j] = minus_x;
+                x_len2 += minus_x * minus_x;
             }
 
-            float sgn = 0.0f < v(i, 0) ? 1.0f : -1.0f;
-            float x_len = sqrtf(column_dot(v, 0, 0));
-            v(i, 0) += sgn * x_len;
+            float sgn = 0.0f < v[i] ? 1.0f : -1.0f;
+            float x_len = sqrtf(x_len2);
+            v[i] += sgn * x_len;
             float v_len2 = 2.0f * x_len * (x_len + fabs(A(i, i)));
 
             // process the column
@@ -581,12 +602,12 @@ namespace sen
                     float VdotCol = 0.0f;
                     for (int i_row = i; i_row < rhs.rows(); i_row++)
                     {
-                        VdotCol += v(i_row, 0) * rhs(i_row, i_col);
+                        VdotCol += v[i_row] * rhs(i_row, i_col);
                     }
                     float k = 2.0f * VdotCol / v_len2;
                     for (int i_row = i; i_row < rhs.rows(); i_row++)
                     {
-                        rhs(i_row, i_col) -= k * v(i_row, 0);
+                        rhs(i_row, i_col) -= k * v[i_row];
                     }
                 }
             };
@@ -600,10 +621,11 @@ namespace sen
         return { Q_transposed, A };
     }
 
-    //template <int rows, int cols, int t /*1 or - 1*/>
     template <int rows, int cols, int t>
     inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)
     {
+        static_assert(t == -1 || t == 1, "invalid arg");
+
         auto qr = qr_decomposition(A, b);
 
         // Solve Rx = Q^T b
@@ -621,6 +643,32 @@ namespace sen
         }
 
         return x;
+    }
+    template <int rows, int cols, int t>
+    inline Mat<cols, t> solve_qr_underdetermined(Mat<rows, cols> A, Mat<rows, t> b)
+    {
+        static_assert(t == -1 || t == 1, "invalid arg");
+
+        auto AT = transpose(A);
+        Mat<cols, cols> I;
+        I.allocate(A.cols(), A.cols());
+        I.set_identity();
+        auto qr = qr_decomposition(AT, I);
+        auto RT = transpose(qr.R);
+
+        Mat<cols, t> xp;
+        xp.allocate(A.cols(), 1);
+        xp.set_identity();
+        for (int r = 0; r < A.rows(); r++)
+        {
+            float sum = 0.0f;
+            for (int i = 0; i < r; i++)
+            {
+                sum += RT(r, i) * xp(i, 0);
+            }
+            xp(r, 0) = (b(r, 0) - sum) / RT(r, r);
+        }
+        return transpose(qr.Q_transposed) * xp;
     }
 
     template <int rows, int cols>

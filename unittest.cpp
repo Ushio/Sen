@@ -621,6 +621,29 @@ TEST_CASE("overdetermined", "") {
 #endif
 }
 
+TEST_CASE("underdetermined", "") {
+    sen::Mat<2, 3> A;
+    A.set(
+        1, 1, 1,
+        1, 1, 2);
+    sen::Mat<2, 1> b;
+    b.set(
+        1,
+        3
+    );
+    sen::Mat<3, 1> x = sen::solve_qr_underdetermined(A, b);
+    sen::Mat<3, 1> x_ref;
+    x_ref.set(
+        -0.5f, 
+        -0.5f, 
+        2.0f);
+    REQUIRE(fabs(x(0, 0) - 0.5f));
+
+    for (auto v : x - x_ref) {
+        REQUIRE(fabs(v) < 1.0e-4f);
+    }
+}
+
 TEST_CASE("qr", "") {
     //sen::Mat<3, 2> A;
     //A.set(
