@@ -628,31 +628,6 @@ namespace sen
         return qr_decomposition(A, I);
     }
 
-    template <int rows, int cols, int t>
-    inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)
-    {
-        static_assert(t == -1 || t == 1, "invalid arg");
-
-        auto qr = qr_decomposition(A, b);
-
-        // Solve Rx = Q^T b
-        //   where qr.Q_transposed == Q^T b
-        Mat<cols, t> x;
-        x.allocate(A.cols(), 1);
-        for (int r = A.cols() - 1; 0 <= r; r--)
-        {
-            float sum = 0.0f;
-            for (int i = r + 1; i < qr.R.cols(); i++)
-            {
-                sum += qr.R(r, i) * x(i, 0);
-            }
-            x(r, 0) = (qr.Q_transposed(r, 0) - sum) / qr.R(r, r);
-        }
-
-        return x;
-    }
-
-
     template <int rows, int cols>
     struct QR_economy
     {
@@ -716,6 +691,29 @@ namespace sen
         }
         return qr.Q * xp;
     }
+    template <int rows, int cols, int t>
+    inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)
+    {
+        static_assert(t == -1 || t == 1, "invalid arg");
+
+        auto qr = qr_decomposition_sr(A);
+        auto b_prime = transpose(qr.Q) * b;
+
+        Mat<cols, t> x;
+        x.allocate(A.cols(), 1);
+        for (int r = A.cols() - 1; 0 <= r; r--)
+        {
+            float sum = 0.0f;
+            for (int i = r + 1; i < qr.R.cols(); i++)
+            {
+                sum += qr.R(r, i) * x(i, 0);
+            }
+            x(r, 0) = (b_prime(r, 0) - sum) / qr.R(r, r);
+        }
+
+        return x;
+    }
+
 
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)
