@@ -178,6 +178,10 @@ int main() {
             // QR solution
             sen::MatDyn delta_thetas = sen::solve_qr_underdetermined(A, b);
 
+            //auto QR = sen::qr_decomposition_sr(sen::transpose(A));
+            //sen::print(QR.Q);
+            //sen::print(QR.R);
+
             // printf("%f %f\n", delta_thetas(3, 0), delta_thetas_qr(3, 0));
 
             // sen::print(delta_theta);

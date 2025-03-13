@@ -622,6 +622,19 @@ TEST_CASE("overdetermined", "") {
 }
 
 TEST_CASE("underdetermined", "") {
+    {
+        sen::Mat<3, 2> A;
+        A.set(
+            1, 1,
+            1, 1,
+            1, 2);
+
+        auto qr = qr_decomposition_sr(A);
+        print(qr.Q);
+        print(qr.R);
+        print(qr.Q * qr.R);
+        printf("");
+    }
     sen::Mat<2, 3> A;
     A.set(
         1, 1, 1,
@@ -645,19 +658,26 @@ TEST_CASE("underdetermined", "") {
 }
 
 TEST_CASE("qr", "") {
-    //sen::Mat<3, 2> A;
-    //A.set(
-    //    1, 1,
-    //    0, 2,
-    //    1, 0);
+    sen::Mat<3, 2> A;
+    A.set(
+        1, 1,
+        0, 2,
+        1, 0);
 
-    //sen::Mat<3, 1> b;
-    //b.set(
-    //    1,
-    //    2,
-    //    1
-    //);
-    //sen::QR<3, 2> qr = sen::qr_decomposition(A);
+    sen::Mat<3, 1> b;
+    b.set(
+        1,
+        2,
+        1
+    );
+    // sen::QR<3, 2> qr = sen::qr_decomposition(A);
+    sen::QR_economy<3, 2> qr = sen::qr_decomposition_sr(A);
+    sen::print(qr.Q);
+    sen::print(qr.R);
+    sen::print(qr.Q * qr.R);
+
+    //sen::print(sen::transpose(qr.Q_transposed));
+    //sen::print(qr.R);
     //sen::print(sen::transpose(qr.Q_transposed) * qr.R);
 
     //unsigned int current_word = 0;
@@ -728,6 +748,22 @@ TEST_CASE("qr", "") {
 
             sen::QR<8, 8> qr = sen::qr_decomposition(A);
             sen::Mat<8, 8> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+
+            s += A_composed(0, 0);
+        }
+        return s;
+    };
+
+    BENCHMARK("QR static sr") {
+        pr::PCG rng;
+        float s = 0;
+        for (int i = 0; i < 10000; i++)
+        {
+            sen::Mat<8, 8> A;
+            for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+            sen::QR_economy<8, 8> qr = sen::qr_decomposition_sr(A);
+            sen::Mat<8, 8> A_composed = qr.Q * qr.R;
 
             s += A_composed(0, 0);
         }

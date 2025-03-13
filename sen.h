@@ -17,13 +17,13 @@ namespace sen
     struct cond<false, T, F> { using type = F; };
 
     template <class T>
-    inline T ss_max(T x, T y)
+    inline constexpr T ss_max(T x, T y)
     {
         return (x < y) ? y : x;
     }
 
     template <class T>
-    inline T ss_min(T x, T y)
+    inline constexpr T ss_min(T x, T y)
     {
         return (y < x) ? y : x;
     }
@@ -651,17 +651,59 @@ namespace sen
 
         return x;
     }
+
+
+    template <int rows, int cols>
+    struct QR_economy
+    {
+        enum { size_r_s = ss_min(rows, cols) };
+        Mat<rows, cols> Q;
+        Mat<size_r_s, size_r_s> R;
+    };
+    // Schwarz-Rutishauser
+    template <int rows, int cols>
+    inline QR_economy<rows, cols> qr_decomposition_sr(const Mat<rows, cols>& A)
+    {
+        constexpr int size_r_s = ss_min(rows, cols);
+        const     int size_r_d = ss_min(A.rows(), A.cols());
+        auto Q = A;
+        Mat<size_r_s, size_r_s> R;
+        R.allocate(size_r_d, size_r_d);
+        R.set_zero();
+        for (int i = 0; i < R.cols(); i++)
+        {
+            for (int r = 0; r < i; r++)
+            {
+                float EdotA = column_dot(Q, r, i);
+                R(r, i) = EdotA;
+                for (int j = 0; j < Q.rows(); j++)
+                {
+                    Q(j, i) -= EdotA * Q(j, r);
+                }
+            }
+            float q_norm = sqrtf(column_dot(Q, i, i));
+            R(i, i) = q_norm;
+            float div = 1.0f / q_norm;
+            for (int r = 0; r < Q.rows(); r++)
+            {
+                Q(r, i) *= div;
+            }
+        }
+
+        return { Q, R };
+    }
+
     template <int rows, int cols, int t>
     inline Mat<cols, t> solve_qr_underdetermined(Mat<rows, cols> A, Mat<rows, t> b)
     {
         static_assert(t == -1 || t == 1, "invalid arg");
 
         auto AT = transpose(A);
-        auto qr = qr_decomposition(AT);
+        auto qr = qr_decomposition_sr(AT);
         auto RT = transpose(qr.R);
 
-        Mat<cols, t> xp;
-        xp.allocate(A.cols(), 1);
+        Mat<rows, t> xp;
+        xp.allocate(A.rows(), 1);
         xp.set_identity();
         for (int r = 0; r < A.rows(); r++)
         {
@@ -672,7 +714,7 @@ namespace sen
             }
             xp(r, 0) = (b(r, 0) - sum) / RT(r, r);
         }
-        return transpose(qr.Q_transposed) * xp;
+        return qr.Q * xp;
     }
 
     template <int rows, int cols>
