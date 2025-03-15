@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
 
-//#define SEN_ENABLE_ASSERTION
+#define SEN_ENABLE_ASSERTION
 #include "sen.h"
 #include "prp.hpp"
 #include <set>
@@ -527,7 +527,7 @@ TEST_CASE("overdetermined", "") {
 #endif
     }
 
-    const int N_Try = 100000;
+    const int N_Try = 10000;
     BENCHMARK("svd solver")
     {
         pr::PCG rng;
@@ -684,6 +684,7 @@ TEST_CASE("qr", "") {
     //_controlfp_s( &current_word, _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT, _MCW_EM );
     //
 
+    // householder
     pr::PCG rng;
     for (int i = 0; i < 100; i++)
     {
@@ -738,7 +739,65 @@ TEST_CASE("qr", "") {
         }
     }
 
-    BENCHMARK("QR static") {
+    // Schwarz-Rutishauser
+    for (int i = 0; i < 100; i++)
+    {
+        sen::Mat<4, 4> A;
+        for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
+
+        sen::Mat<4, 4> I;
+        I.set_identity();
+        sen::QR_economy<4, 4> qr = sen::qr_decomposition_sr(A);
+        sen::Mat<4, 4> A_composed = qr.Q * qr.R;
+
+        //sen::print(A);
+        //sen::print(A_composed);
+
+        for (auto v : I - qr.Q * sen::transpose(qr.Q)) {
+            REQUIRE(fabs(v) < 1.0e-4f);
+        }
+
+        for (auto v : A - A_composed) {
+            REQUIRE(fabs(v) < 1.0e-4f);
+        }
+
+        sen::QR_economy<-1, -1> qr_dynamic = sen::qr_decomposition_sr(sen::MatDyn(A));
+        REQUIRE(qr.Q == qr_dynamic.Q);
+        REQUIRE(qr.R == qr_dynamic.R);
+    }
+    // maybe householder is fine?
+    //for (int i = 0; i < 100; i++)
+    //{
+    //    int rows = 2 + rng.uniform() % 10;
+    //    int cols = 2 + rng.uniform() % 10;
+    //    sen::MatDyn A;
+    //    A.allocate(rows, cols);
+    //    for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
+
+    //    sen::QR_economy<-1, -1> qr = sen::qr_decomposition_sr(A);
+    //    sen::print(A);
+    //    sen::print(qr.Q);
+    //    sen::print(qr.R);
+
+    //    sen::MatDyn A_composed = qr.Q * qr.R;
+
+    //    for (int i_col = 0; i_col < qr.R.cols(); i_col++)
+    //    {
+    //        for (int i_row = i_col + 1; i_row < qr.R.rows(); i_row++)
+    //        {
+    //            REQUIRE(qr.R(i_row, i_col) == 0.0f);
+    //        }
+    //    }
+
+    //    sen::print(A);
+    //    sen::print(A_composed);
+
+    //    for (auto v : A - A_composed) {
+    //        REQUIRE(fabs(v) < 1.0e-4f);
+    //    }
+    //}
+
+    BENCHMARK("QR static hr") {
         pr::PCG rng;
         float s = 0;
         for (int i = 0; i < 10000; i++)

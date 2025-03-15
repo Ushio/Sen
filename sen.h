@@ -627,6 +627,29 @@ namespace sen
             }
             return q;
         }
+
+        // transpose(Q) * x
+        template <int input_rows>
+        Mat<rows, input_rows> applyQTransposed(Mat<rows, input_rows> x)
+        {
+            for (int i = 0; i < vs.cols(); i++)
+            {
+                float VdotCol = 0.0f;
+                float VdotV = 0.0f;
+                for (int i_row = i; i_row < x.rows(); i_row++)
+                {
+                    float v = vs(i_row, i);
+                    VdotCol += v * x(i_row, 0);
+                    VdotV += v * v;
+                }
+                float k = 2.0f * VdotCol / VdotV;
+                for (int i_row = i; i_row < x.rows(); i_row++)
+                {
+                    x(i_row, 0) -= k * vs(i_row, i);
+                }
+            }
+            return x;
+        }
     };
 
     // householder QR decomposition
@@ -703,8 +726,8 @@ namespace sen
     {
         static_assert(t == -1 || t == 1, "invalid arg");
 
-        auto qr = qr_decomposition_sr(A);
-        auto b_prime = transpose(qr.Q) * b;
+        auto qr = qr_decomposition_hr(A);
+        auto b_prime = qr.applyQTransposed(b);
 
         Mat<cols, t> x;
         x.allocate(A.cols(), 1);
@@ -720,7 +743,6 @@ namespace sen
 
         return x;
     }
-
 
     template <int rows, int cols>
     float det(const Mat<rows, cols>& A)

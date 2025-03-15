@@ -18,6 +18,7 @@ project "main"
     targetdir "bin/"
     systemversion "latest"
     flags { "MultiProcessorCompile", "NoPCH" }
+    cppdialect "C++14"
 
     -- Src
     files { "main.cpp", "sen.h" }
@@ -59,6 +60,7 @@ project "unittest"
     targetdir "bin/"
     systemversion "latest"
     flags { "MultiProcessorCompile", "NoPCH" }
+    cppdialect "C++14"
     buildoptions "/bigobj"
 
     -- Src
