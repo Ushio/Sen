@@ -670,12 +670,12 @@ TEST_CASE("qr", "") {
         2,
         1
     );
-    // sen::QR<3, 2> qr = sen::qr_decomposition(A);
-    sen::QR_economy<3, 2> qr = sen::qr_decomposition_sr(A);
-    sen::print(qr.Q);
-    sen::print(qr.R);
-    sen::print(qr.Q * qr.R);
-
+    //sen::QR_full<3, 2> qr = sen::qr_decomposition_hr(A);
+    //// sen::QR_economy<3, 2> qr = sen::qr_decomposition_sr(A);
+    //sen::print(qr.Q());
+    //sen::print(qr.R);
+    //sen::print(qr.Q() * qr.R);
+    //sen::print(qr.Q() * transpose(qr.Q()));
     //sen::print(sen::transpose(qr.Q_transposed));
     //sen::print(qr.R);
     //sen::print(sen::transpose(qr.Q_transposed) * qr.R);
@@ -692,13 +692,13 @@ TEST_CASE("qr", "") {
 
         sen::Mat<4, 4> I;
         I.set_identity();
-        sen::QR<4, 4> qr = sen::qr_decomposition(A);
-        sen::Mat<4, 4> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+        sen::QR_full<4, 4> qr = sen::qr_decomposition_hr(A);
+        sen::Mat<4, 4> A_composed = qr.Q() * qr.R;
 
         //sen::print(A);
         //sen::print(A_composed);
 
-        for (auto v : I - qr.Q_transposed * sen::transpose(qr.Q_transposed)) {
+        for (auto v : I - qr.Q() * sen::transpose(qr.Q())) {
             REQUIRE(fabs(v) < 1.0e-5f);
         }
 
@@ -706,8 +706,8 @@ TEST_CASE("qr", "") {
             REQUIRE(fabs(v) < 1.0e-5f);
         }
 
-        sen::QR<-1, -1> qr_dynamic = sen::qr_decomposition(sen::MatDyn(A));
-        REQUIRE(qr.Q_transposed == qr_dynamic.Q_transposed);
+        sen::QR_full<-1, -1> qr_dynamic = sen::qr_decomposition_hr(sen::MatDyn(A));
+        REQUIRE(qr.Q() == qr_dynamic.Q());
         REQUIRE(qr.R == qr_dynamic.R);
     }
 
@@ -719,8 +719,8 @@ TEST_CASE("qr", "") {
         A.allocate(rows, cols);
         for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
 
-        sen::QR<-1, -1> qr = sen::qr_decomposition(A);
-        sen::MatDyn A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+        sen::QR_full<-1, -1> qr = sen::qr_decomposition_hr(A);
+        sen::MatDyn A_composed = qr.Q() * qr.R;
 
         for (int i_col = 0; i_col < qr.R.cols(); i_col++)
         {
@@ -746,8 +746,8 @@ TEST_CASE("qr", "") {
             sen::Mat<8, 8> A;
             for (auto& v : A) { v = glm::mix(-5.0f, 5.0f, rng.uniformf()); }
 
-            sen::QR<8, 8> qr = sen::qr_decomposition(A);
-            sen::Mat<8, 8> A_composed = sen::transpose(qr.Q_transposed) * qr.R;
+            sen::QR_full<8, 8> qr = sen::qr_decomposition_hr(A);
+            sen::Mat<8, 8> A_composed = qr.Q() * qr.R;
 
             s += A_composed(0, 0);
         }

@@ -556,78 +556,6 @@ namespace sen
         return x;
     }
 
-    template <int rows, int cols, int q_cols = rows>
-    struct QR
-    {
-        Mat<rows, q_cols> Q_transposed; // = Hn x Hn-1 x ... x H2 x H1
-        Mat<rows, cols> R;
-    };
-
-    // householder QR decomposition
-    template <int rows, int cols, int q_cols = rows>
-    inline QR<rows, cols, q_cols> qr_decomposition(Mat<rows, cols> A, Mat<rows, q_cols> Q_transposed)
-    {
-        Vec<rows> v;
-        v.allocate(A.rows());
-
-        for (int i = 0; i < A.cols() && i < A.rows() - 1; i++)
-        {
-            float x_len2 = 0.0f;
-            for (int j = 0; j < A.rows() ; j++)
-            {
-                v[j] = j < i ? 0.0f : -A(j, i);
-                x_len2 += v[j] * v[j];
-            }
-
-            float sgn = 0.0f < v[i] ? 1.0f : -1.0f;
-            float x_len = sqrtf(x_len2);
-            v[i] += sgn * x_len;
-            float v_len2 = 2.0f * x_len * (x_len + fabs(A(i, i)));
-
-            // process the column
-            A(i, i) = sgn * x_len;
-            for (int i_row = i + 1; i_row < A.rows(); i_row++)
-            {
-                A(i_row, i) = 0.0f;
-            }
-
-            // rhs = H_i * rhs
-            auto mul_householder = [i, v_len2](const auto&v, auto& rhs, int col_start)
-            {
-                for (int i_col = col_start; i_col < rhs.cols(); i_col++)
-                {
-                    // note that upper part does not change.
-                    float VdotCol = 0.0f;
-                    for (int i_row = i; i_row < rhs.rows(); i_row++)
-                    {
-                        VdotCol += v[i_row] * rhs(i_row, i_col);
-                    }
-                    float k = 2.0f * VdotCol / v_len2;
-                    for (int i_row = i; i_row < rhs.rows(); i_row++)
-                    {
-                        rhs(i_row, i_col) -= k * v[i_row];
-                    }
-                }
-            };
-
-            // process the following columns
-            mul_householder(v, A, i + 1); 
-
-            // process Q_transposed
-            mul_householder(v, Q_transposed, 0);
-        }
-        return { Q_transposed, A };
-    }
-
-    template <int rows, int cols>
-    inline QR<rows, cols, rows> qr_decomposition(Mat<rows, cols> A)
-    {
-        sen::Mat<rows, rows> I;
-        I.allocate(A.rows(), A.rows());
-        I.set_identity();
-        return qr_decomposition(A, I);
-    }
-
     template <int rows, int cols>
     struct QR_economy
     {
@@ -666,6 +594,85 @@ namespace sen
         }
 
         return { Q, R };
+    }
+
+    template <int rows, int cols>
+    struct QR_full
+    {
+        enum { n_householder_s = ss_max( ss_min(cols, rows - 1), -1 ) };
+        Mat<rows, n_householder_s> vs; // householder vectors
+        Mat<rows, cols> R;
+
+        Mat<rows, rows> Q() const
+        {
+            Mat<rows, rows> q;
+            q.allocate(vs.rows(), vs.rows());
+            q.set_identity();
+
+            for (int i = 0; i < vs.cols(); i++)
+            {
+                float k = 2.0f / column_dot(vs, i, i);
+                for (int i_row = 0; i_row < q.rows(); i_row++)
+                {
+                    float VdotRow = 0.0f;
+                    for (int i_col = i; i_col < vs.rows(); i_col++)
+                    {
+                        VdotRow += q(i_row, i_col) * vs(i_col, i);
+                    }
+                    for (int i_col = i; i_col < vs.rows(); i_col++)
+                    {
+                        q(i_row, i_col) -= k * VdotRow * vs(i_col, i);
+                    }
+                }
+            }
+            return q;
+        }
+    };
+
+    // householder QR decomposition
+    template <int rows, int cols>
+    inline QR_full<rows, cols> qr_decomposition_hr(Mat<rows, cols> A)
+    {
+        int n_householder_d = ss_min(A.cols(), A.rows() - 1);
+        Mat<rows, QR_full<rows, cols>::n_householder_s> vs;
+        vs.allocate(A.rows(), n_householder_d);
+
+        for (int i = 0; i < n_householder_d; i++)
+        {
+            for (int j = 0; j < A.rows() ; j++)
+            {
+                vs(j, i) = j < i ? 0.0f : -A(j, i);
+            }
+
+            float sgn = 0.0f < vs(i, i) ? 1.0f : -1.0f;
+            float x_len = sqrtf(column_dot(vs, i, i));
+            vs(i, i) += sgn * x_len;
+            float v_len2 = 2.0f * x_len * (x_len + fabs(A(i, i)));
+
+            // process the column
+            A(i, i) = sgn * x_len;
+            for (int i_row = i + 1; i_row < A.rows(); i_row++)
+            {
+                A(i_row, i) = 0.0f;
+            }
+
+            // rhs = H_i * rhs
+            for (int i_col = i + 1; i_col < A.cols(); i_col++)
+            {
+                // note that upper part does not change.
+                float VdotCol = 0.0f;
+                for (int i_row = i; i_row < A.rows(); i_row++)
+                {
+                    VdotCol += vs(i_row, i) * A(i_row, i_col);
+                }
+                float k = 2.0f * VdotCol / v_len2;
+                for (int i_row = i; i_row < A.rows(); i_row++)
+                {
+                    A(i_row, i_col) -= k * vs(i_row, i);
+                }
+            }
+        }
+        return {vs, A};
     }
 
     template <int rows, int cols, int t>
