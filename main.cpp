@@ -167,6 +167,8 @@ int main() {
 
             sen::Mat<128, 2> dataMat;
 
+            pr::OnlineMean<float> xm;
+            pr::OnlineMean<float> ym;
             PCG rng;
             for (int i = 0; i < 128; i++)
             {
@@ -183,6 +185,15 @@ int main() {
 
                 dataMat(i, 0) = p.x;
                 dataMat(i, 1) = p.y;
+                xm.addSample(p.x);
+                ym.addSample(p.y);
+            }
+
+            // centered
+            for (int i = 0; i < 128; i++)
+            {
+                dataMat(i, 0) -= xm.mean();
+                dataMat(i, 1) -= ym.mean();
             }
 
             sen::SVD<128, 2> svd = sen::svd_BV(dataMat);
