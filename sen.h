@@ -704,12 +704,12 @@ namespace sen
         static_assert(t == -1 || t == 1, "invalid arg");
 
         auto AT = transpose(A);
-        auto qr = qr_decomposition_sr(AT);
+        auto qr = qr_decomposition_hr(AT);
         auto RT = transpose(qr.R);
 
-        Mat<rows, t> xp;
-        xp.allocate(A.rows(), 1);
-        xp.set_identity();
+        Mat<cols, t> xp;
+        xp.allocate(A.cols(), 1);
+        xp.set_zero();
         for (int r = 0; r < A.rows(); r++)
         {
             float sum = 0.0f;
@@ -719,7 +719,7 @@ namespace sen
             }
             xp(r, 0) = (b(r, 0) - sum) / RT(r, r);
         }
-        return qr.Q * xp;
+        return qr.Q() * xp;
     }
     template <int rows, int cols, int t>
     inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)
