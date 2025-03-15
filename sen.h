@@ -98,24 +98,6 @@ namespace sen
         std::unique_ptr<float[]> m_storage;
     };
 
-    template<int N>
-    struct Vec
-    {
-        float& operator[](int i)
-        {
-            return m_storage[i];
-        }
-        const float& operator[](int i) const
-        {
-            return m_storage[i];
-        }
-        void allocate(int N)
-        {
-            m_storage.allocate(N, 1);
-        }
-        Storage<N, N == -1 ? -1 : 1> m_storage;
-    };
-
     // Example of Mat<3 /*out*/, 2 /*in*/>
     // | m(0,0), m(0,1) |
     // | m(1,0), m(1,1) |
