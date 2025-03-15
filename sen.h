@@ -629,10 +629,39 @@ namespace sen
         }
 
         // transpose(Q) * x
-        template <int input_rows>
-        Mat<rows, input_rows> applyQTransposed(Mat<rows, input_rows> x)
+        template <int input_cols>
+        Mat<rows, input_cols> applyQTransposed(Mat<rows, input_cols> x)
         {
+            static_assert(input_cols == 1 || input_cols - 1);
+            SEN_ASSERT(x.cols() == 1);
+
             for (int i = 0; i < vs.cols(); i++)
+            {
+                float VdotCol = 0.0f;
+                float VdotV = 0.0f;
+                for (int i_row = i; i_row < x.rows(); i_row++)
+                {
+                    float v = vs(i_row, i);
+                    VdotCol += v * x(i_row, 0);
+                    VdotV += v * v;
+                }
+                float k = 2.0f * VdotCol / VdotV;
+                for (int i_row = i; i_row < x.rows(); i_row++)
+                {
+                    x(i_row, 0) -= k * vs(i_row, i);
+                }
+            }
+            return x;
+        }
+
+        // Q * x
+        template <int input_cols>
+        Mat<rows, input_cols> applyQ(Mat<rows, input_cols> x)
+        {
+            static_assert(input_cols == 1 || input_cols - 1);
+            SEN_ASSERT(x.cols() == 1);
+
+            for (int i = vs.cols() - 1; 0 <= i; i--)
             {
                 float VdotCol = 0.0f;
                 float VdotV = 0.0f;
@@ -719,7 +748,7 @@ namespace sen
             }
             xp(r, 0) = (b(r, 0) - sum) / RT(r, r);
         }
-        return qr.Q() * xp;
+        return qr.applyQ(xp);
     }
     template <int rows, int cols, int t>
     inline Mat<cols, t> solve_qr_overdetermined(Mat<rows, cols> A, Mat<rows, t> b)

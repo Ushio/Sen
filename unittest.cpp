@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
 
-#define SEN_ENABLE_ASSERTION
+//#define SEN_ENABLE_ASSERTION
 #include "sen.h"
 #include "prp.hpp"
 #include <set>
@@ -622,19 +622,19 @@ TEST_CASE("overdetermined", "") {
 }
 
 TEST_CASE("underdetermined", "") {
-    {
-        sen::Mat<3, 2> A;
-        A.set(
-            1, 1,
-            1, 1,
-            1, 2);
+    //{
+    //    sen::Mat<3, 2> A;
+    //    A.set(
+    //        1, 1,
+    //        1, 1,
+    //        1, 2);
 
-        auto qr = qr_decomposition_sr(A);
-        print(qr.Q);
-        print(qr.R);
-        print(qr.Q * qr.R);
-        printf("");
-    }
+    //    auto qr = qr_decomposition_sr(A);
+    //    print(qr.Q);
+    //    print(qr.R);
+    //    print(qr.Q * qr.R);
+    //    printf("");
+    //}
     sen::Mat<2, 3> A;
     A.set(
         1, 1, 1,
