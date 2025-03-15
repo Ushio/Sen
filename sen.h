@@ -567,6 +567,8 @@ namespace sen
     template <int rows, int cols>
     inline QR_economy<rows, cols> qr_decomposition_sr(const Mat<rows, cols>& A)
     {
+        static_assert(cols <= rows, "not supported yet");
+
         constexpr int size_r_s = ss_min(rows, cols);
         const     int size_r_d = ss_min(A.rows(), A.cols());
         auto Q = A;
@@ -632,7 +634,7 @@ namespace sen
         template <int input_cols>
         Mat<rows, input_cols> applyQTransposed(Mat<rows, input_cols> x)
         {
-            static_assert(input_cols == 1 || input_cols - 1);
+            static_assert(input_cols == 1 || input_cols - 1, "bad size");
             SEN_ASSERT(x.cols() == 1);
 
             for (int i = 0; i < vs.cols(); i++)
@@ -658,7 +660,7 @@ namespace sen
         template <int input_cols>
         Mat<rows, input_cols> applyQ(Mat<rows, input_cols> x)
         {
-            static_assert(input_cols == 1 || input_cols - 1);
+            static_assert(input_cols == 1 || input_cols - 1, "bad size");
             SEN_ASSERT(x.cols() == 1);
 
             for (int i = vs.cols() - 1; 0 <= i; i--)

@@ -765,37 +765,6 @@ TEST_CASE("qr", "") {
         REQUIRE(qr.Q == qr_dynamic.Q);
         REQUIRE(qr.R == qr_dynamic.R);
     }
-    // maybe householder is fine?
-    //for (int i = 0; i < 100; i++)
-    //{
-    //    int rows = 2 + rng.uniform() % 10;
-    //    int cols = 2 + rng.uniform() % 10;
-    //    sen::MatDyn A;
-    //    A.allocate(rows, cols);
-    //    for (auto& v : A) { v = glm::mix(-1.0f, 1.0f, rng.uniformf()); }
-
-    //    sen::QR_economy<-1, -1> qr = sen::qr_decomposition_sr(A);
-    //    sen::print(A);
-    //    sen::print(qr.Q);
-    //    sen::print(qr.R);
-
-    //    sen::MatDyn A_composed = qr.Q * qr.R;
-
-    //    for (int i_col = 0; i_col < qr.R.cols(); i_col++)
-    //    {
-    //        for (int i_row = i_col + 1; i_row < qr.R.rows(); i_row++)
-    //        {
-    //            REQUIRE(qr.R(i_row, i_col) == 0.0f);
-    //        }
-    //    }
-
-    //    sen::print(A);
-    //    sen::print(A_composed);
-
-    //    for (auto v : A - A_composed) {
-    //        REQUIRE(fabs(v) < 1.0e-4f);
-    //    }
-    //}
 
     BENCHMARK("QR static hr") {
         pr::PCG rng;
