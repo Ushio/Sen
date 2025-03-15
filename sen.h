@@ -774,16 +774,4 @@ namespace sen
 
         return x;
     }
-
-    template <int rows, int cols>
-    float det(const Mat<rows, cols>& A)
-    {
-        static_assert(rows == cols, "must be square");
-        static_assert(0, "not implemented");
-    }
-    template <>
-    float det(const Mat<2, 2>& A)
-    {
-        return A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
-    }
 }

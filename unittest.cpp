@@ -319,32 +319,43 @@ TEST_CASE("Multiple Linear Regression", "") {
     };
 
     sen::Mat<N_Samples, 4> A;
-    for (int i = 0; i < A.rows(); i++)
-    {
-        A(i, 0) = 1;
 
-        for (int j = 1; j < 4; j++)
+    for (int j = 0; j < 32; j++)
+    {
+        for (int i = 0; i < A.rows(); i++)
         {
-            A(i, j) = rng.uniformf();
+            A(i, 0) = 1;
+
+            // sample points
+            for (int j = 1; j < 4; j++)
+            {
+                A(i, j) = rng.uniformf();
+            }
+        }
+
+        sen::Mat<N_Samples, 1> errors;
+        for (auto& v : errors) { v = glm::mix(-0.1f, 0.1f, rng.uniformf()); }
+
+        sen::Mat<N_Samples, 1> measurements = A * x_ref + errors;
+
+        sen::SVD<N_Samples, 4> svd = sen::svd_BV(A);
+        sen::Mat<4, 1> x_resolved = svd.pinv() * measurements;
+
+        // sen::print(x_resolved);
+
+        REQUIRE(fabs(x_resolved(0, 0) - k) < 0.05f);
+        REQUIRE(fabs(x_resolved(1, 0) - a) < 0.05f);
+        REQUIRE(fabs(x_resolved(2, 0) - b) < 0.05f);
+        REQUIRE(fabs(x_resolved(3, 0) - c) < 0.05f);
+
+        REQUIRE(sen::svd_BV(sen::MatDyn(A)).pinv() == svd.pinv()); // dynamic equality check
+
+        // QR 
+        sen::Mat<4, 1> x_resolved_qr = sen::solve_qr_overdetermined(A, measurements);
+        for (auto v : x_resolved - x_resolved_qr) {
+            REQUIRE(fabs(v) < 1.0e-4f);
         }
     }
-
-    sen::Mat<N_Samples, 1> errors;
-    for (auto& v : errors) { v = glm::mix(-0.1f, 0.1f, rng.uniformf()); }
-
-    sen::Mat<N_Samples, 1> measurements = A * x_ref + errors;
-
-    sen::SVD<N_Samples, 4> svd = sen::svd_BV(A);
-    sen::Mat<4, 1> x_resolved = svd.pinv() * measurements;
-
-    // sen::print(x_resolved);
-
-    REQUIRE(fabs(x_resolved(0, 0) - k) < 0.05f);
-    REQUIRE(fabs(x_resolved(1, 0) - a) < 0.05f);
-    REQUIRE(fabs(x_resolved(2, 0) - b) < 0.05f);
-    REQUIRE(fabs(x_resolved(3, 0) - c) < 0.05f);
-
-    REQUIRE(sen::svd_BV(sen::MatDyn(A)).pinv() == svd.pinv()); // dynamic equality check
 }
 
 TEST_CASE("cyclic by row", "") 
