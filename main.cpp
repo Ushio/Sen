@@ -19,6 +19,7 @@ enum
 {
     DEMO_INVERSE_KINEMATICS = 0,
     DEMO_PCA,
+    DEMO_PLANE_FIT,
 };
 
 int main() {
@@ -203,6 +204,48 @@ int main() {
             DrawArrow({ 0, 0, 0 }, { svd.V(0, 0) * scale1 * 2.0f, svd.V(1, 0) * scale1 * 2.0f, 0.0f }, 0.005f, { 255,0,0 });
             DrawArrow({ 0, 0, 0 }, { svd.V(0, 1) * scale2 * 2.0f, svd.V(1, 1) * scale2 * 2.0f, 0.0f }, 0.005f, { 0,255,0 });
         }
+        else if(demo == DEMO_PLANE_FIT)
+        {
+            glm::vec3 center = { 0.1f, -0.2f, 2.0f };
+
+            // note that it is not minimization of distance to plane
+            // [x, y, 1] -   z
+            // [x, y, 1] a   z
+            // [x, y, 1] b = z
+            // [x, y, 1] d   z
+            //           -
+            sen::Mat<128, 3> A;
+            sen::Mat<128, 1> b;
+
+            PCG rng;
+            for (int i = 0; i < 128; i++)
+            {
+                glm::vec3 random_p = { glm::mix(-1.0f, 1.0f, rng.uniformf()), rng.uniformf() * 0.2f, glm::mix(-1.0f, 1.0f, rng.uniformf()) };
+                
+                float iTime = GetElapsedTime();
+                float timeU = iTime * 0.7f;
+                float timeV = -iTime * 0.3f;
+                glm::quat q = 
+                    glm::angleAxis(timeU, glm::vec3{ 0.0f, 1.0f, 0.0f }) * 
+                    glm::angleAxis(timeV, glm::vec3{ 1.0f, 0.0f, 0.0f });
+                glm::vec3 point = center + q * random_p;
+
+                DrawPoint(point, { 255,255,255 }, 4);
+
+                A(i, 0) = point.x;
+                A(i, 1) = point.y;
+                A(i, 2) = 1;
+                b(i, 0) = point.z;
+            }
+            
+            sen::Mat<3, 1> abd = sen::solve_qr_overdetermined(A, b);
+            
+            glm::vec3 N = { abd(0, 0), abd(1, 0), -1.0f };
+
+            glm::vec3 t0, t1;
+            GetOrthonormalBasis(glm::normalize(N), &t0, &t1);
+            DrawFreeGrid({0.0f, 0.0f, abd(2, 0) }, t0, t1, 3, {255, 255,255});
+        }
 
         PopGraphicState();
         EndCamera();
@@ -214,7 +257,8 @@ int main() {
         ImGui::Text("fps = %f", GetFrameRate());
         ImGui::RadioButton("Inverse Kinematrics", &demo, DEMO_INVERSE_KINEMATICS);
         ImGui::RadioButton("PCA", &demo, DEMO_PCA);
-
+        ImGui::RadioButton("Plane Fit", &demo, DEMO_PLANE_FIT);
+        
         ImGui::End();
 
         EndImGui();
