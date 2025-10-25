@@ -10,12 +10,6 @@
 
 namespace sen
 {
-    template<bool B, class T, class F>
-    struct cond { using type = T; };
-
-    template<class T, class F>
-    struct cond<false, T, F> { using type = F; };
-
     template <class T>
     inline constexpr T ss_max(T x, T y)
     {
