@@ -219,11 +219,9 @@ namespace sen
         printf("}\n");
     }
 
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    bool operator==(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    template <int rows, int cols>
+    bool operator==(const Mat<rows, cols>& lhs, const Mat<rows, cols>& rhs)
     {
-        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_rows == rhs_rows, "invalid comparison");
-        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_cols, "invalid comparison");
         SEN_ASSERT(lhs.cols() == rhs.cols() && "invalid comparison");
         SEN_ASSERT(lhs.rows() == rhs.rows() && "invalid comparison");
 
@@ -236,8 +234,8 @@ namespace sen
         }
         return true;
     }
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    bool operator!=(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    template <int rows, int cols>
+    bool operator!=(const Mat<rows, cols>& lhs, const Mat<rows, cols>& rhs)
     {
         return !(lhs == rhs);
     }

@@ -348,7 +348,7 @@ TEST_CASE("Multiple Linear Regression", "") {
         REQUIRE(fabs(x_resolved(2, 0) - b) < 0.05f);
         REQUIRE(fabs(x_resolved(3, 0) - c) < 0.05f);
 
-        REQUIRE(sen::svd_BV(sen::MatDyn(A)).pinv() == svd.pinv()); // dynamic equality check
+        REQUIRE(sen::svd_BV(sen::MatDyn(A)).pinv() == sen::MatDyn(svd.pinv())); // dynamic equality check
 
         // QR 
         sen::Mat<4, 1> x_resolved_qr = sen::solve_qr_overdetermined(A, measurements);
@@ -505,7 +505,7 @@ TEST_CASE("overdetermined", "") {
         }
 
         sen::MatDyn x_dynamic = solve_qr_overdetermined(sen::MatDyn(A), sen::MatDyn(b));
-        REQUIRE(x == x_dynamic);
+        REQUIRE(sen::MatDyn(x) == x_dynamic);
 
 #if ENABLE_EIGEN_BENCH
         // Eigen test
@@ -719,8 +719,8 @@ TEST_CASE("qr", "") {
         }
 
         sen::QR_full<-1, -1> qr_dynamic = sen::qr_decomposition_hr(sen::MatDyn(A));
-        REQUIRE(qr.Q() == qr_dynamic.Q());
-        REQUIRE(qr.R == qr_dynamic.R);
+        REQUIRE(sen::MatDyn(qr.Q()) == qr_dynamic.Q());
+        REQUIRE(sen::MatDyn(qr.R) == qr_dynamic.R);
     }
 
     for (int i = 0; i < 100; i++)
@@ -773,8 +773,8 @@ TEST_CASE("qr", "") {
         }
 
         sen::QR_economy<-1, -1> qr_dynamic = sen::qr_decomposition_sr(sen::MatDyn(A));
-        REQUIRE(qr.Q == qr_dynamic.Q);
-        REQUIRE(qr.R == qr_dynamic.R);
+        REQUIRE(sen::MatDyn(qr.Q) == qr_dynamic.Q);
+        REQUIRE(sen::MatDyn(qr.R) == qr_dynamic.R);
     }
 
     BENCHMARK("QR static hr") {
