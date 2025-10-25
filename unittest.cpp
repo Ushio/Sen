@@ -73,12 +73,18 @@ TEST_CASE("Sub") {
         sen::Mat<4, 5> A;
         for (float& v : A) { v = rng.uniformf(); }
         
-        sen::MatDyn B = A;
+        sen::Mat<4, 5> B = A;
 
         for (float v : B - A) {
             REQUIRE(v == 0.0f);
         }
         for (float v : A - B) {
+            REQUIRE(v == 0.0f);
+        }
+        for (float v : sen::MatDyn(B) - sen::MatDyn(A)) {
+            REQUIRE(v == 0.0f);
+        }
+        for (float v : sen::MatDyn(A) - sen::MatDyn(B)) {
             REQUIRE(v == 0.0f);
         }
     }

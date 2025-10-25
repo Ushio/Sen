@@ -269,13 +269,10 @@ namespace sen
         return r;
     }
 
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols, class T>
-    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type element_wise_op_binary(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs, T f)
+    template <int rows, int cols, class F>
+    Mat<rows, cols> element_wise_op_binary(const Mat<rows, cols>& lhs, const Mat<rows, cols>& rhs, F f)
     {
-        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_rows == rhs_rows, "invalid substruct");
-        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_cols, "invalid substruct");
-
-        typename ConservativelyDynamic<lhs_rows, rhs_cols>::type r;
+        Mat<rows, cols> r;
 
         r.allocate(lhs.rows(), lhs.cols());
 
@@ -287,13 +284,13 @@ namespace sen
         return r;
     }
 
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator-(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    template <int rows, int cols>
+    Mat<rows, cols> operator-(const Mat<rows, cols>& lhs, const Mat<rows, cols>& rhs)
     {
         return element_wise_op_binary(lhs, rhs, [](float a, float b) { return a - b; });
     }
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator+(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
+    template <int rows, int cols>
+    Mat<rows, cols> operator+(const Mat<rows, cols>& lhs, const Mat<rows, cols>& rhs)
     {
         return element_wise_op_binary(lhs, rhs, [](float a, float b) { return a + b; });
     }
