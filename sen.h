@@ -240,17 +240,10 @@ namespace sen
         return !(lhs == rhs);
     }
 
-    template <int rows, int cols>
-    struct ConservativelyDynamic
+    template <int lhs_rows, int lhs_cols_rhs_rows, int rhs_cols>
+    Mat<lhs_rows, rhs_cols> operator*(const Mat<lhs_rows, lhs_cols_rhs_rows>& lhs, const Mat<lhs_cols_rhs_rows, rhs_cols>& rhs)
     {
-        using type = typename cond<rows == -1 || cols == -1, Mat<-1, -1>, Mat<rows, cols>>::type;
-    };
-
-    template <int lhs_rows, int lhs_cols, int rhs_rows, int rhs_cols>
-    typename ConservativelyDynamic<lhs_rows, rhs_cols>::type operator*(const Mat<lhs_rows, lhs_cols>& lhs, const Mat<rhs_rows, rhs_cols>& rhs)
-    {
-        typename ConservativelyDynamic<lhs_rows, rhs_cols>::type r;
-        static_assert(lhs_cols == -1 || rhs_cols == -1 /*ignore dynamic*/ || lhs_cols == rhs_rows, "invalid multiplication");
+        Mat<lhs_rows, rhs_cols> r;
         SEN_ASSERT(lhs.cols() == rhs.rows() && "invalid multiplication");
 
         r.allocate(lhs.rows(), rhs.cols());
